@@ -187,12 +187,13 @@ import { getFirestore, collection, getDocs, query, orderBy }
    index.html と まったく同じ firebaseConfig を貼ってください
    ============================================================ */
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey: "AIzaSyBFn0ossPONSQL0Q86xBaiG36ESI850UL0",
+  authDomain: "daime-a07ca.firebaseapp.com",
+  projectId: "daime-a07ca",
+  storageBucket: "daime-a07ca.firebasestorage.app",
+  messagingSenderId: "1078310000086",
+  appId: "1:1078310000086:web:3124e52ed4eb6143b88077",
+  measurementId: "G-WL5G0VHX6J"
 };
 
 const app  = initializeApp(firebaseConfig);
