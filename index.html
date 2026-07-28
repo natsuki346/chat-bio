@@ -1,1 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chat Bio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sans-serif;min-height:100vh;padding:28px 18px 150px;font-size:15px;-webkit-font-smoothing:antialiased}
+.app{max-width:600px;margin:0 auto}
+h1{font-size:15px;font-weight:500;letter-spacing:.04em;margin-bottom:6px}
+.sub{font-size:12px;color:#555;line-height:1.7;margin-bottom:24px}
+.log{display:flex;flex-direction:column;gap:26px;min-height:40px}
+.q{font-size:14px;color:#fff;line-height:1.7;padding-left:11px;border-left:2px solid #fff}
+.lead{font-size:13.5px;color:#8a8a8a;line-height:2}
+.head{font-size:11px;color:#555;letter-spacing:.1em;margin-bottom:10px}
+.card{border-top:1px solid #1c1c1c;cursor:pointer}
+.card:last-of-type{border-bottom:1px solid #1c1c1c}
+.top{padding:15px 2px;display:flex;gap:13px;align-items:baseline}
+.n{font-size:11px;color:#555;flex-shrink:0;font-variant-numeric:tabular-nums}
+.meta{flex:1;min-width:0}
+.lab{font-size:11px;color:#5c5c5c;margin-bottom:5px;line-height:1.5}
+.ttl{font-size:14px;color:#e8e8e8;line-height:1.65}
+.mark{font-size:10px;color:#444;flex-shrink:0;transition:transform .25s}
+.card.open .mark{transform:rotate(45deg)}
+.card.open .ttl{color:#fff}
+.body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.card.open .body{max-height:1200px}
+.inner{padding:0 2px 20px 24px}
+.txt{font-size:13.5px;color:#b4b4b4;line-height:2.05;white-space:pre-wrap}
+.pt{margin-top:14px;font-size:12.5px;color:#7a7a7a;line-height:1.8;padding-left:11px;border-left:1px solid #2a2a2a}
+.refs{margin-top:28px}
+.ref{display:block;text-decoration:none;padding:12px 2px;border-top:1px solid #1c1c1c}
+.ref:last-child{border-bottom:1px solid #1c1c1c}
+.rt{font-size:13px;color:#d0d0d0;line-height:1.6}
+.rw{font-size:11px;color:#555;margin-top:4px;line-height:1.5}
+.chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;max-width:600px;margin:0 auto 10px;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{background:transparent;border:1px solid #222;color:#777;border-radius:14px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.chip:active{border-color:#555;color:#ccc}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#000;border-top:1px solid #161616;padding:12px 18px calc(12px + env(safe-area-inset-bottom))}
+.barin{max-width:600px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
+textarea{flex:1;background:#0c0c0c;border:1px solid #1f1f1f;border-radius:10px;outline:none;color:#fff;font-size:16px;font-family:inherit;resize:none;min-height:40px;max-height:110px;line-height:1.5;padding:10px 12px}
+textarea:focus{border-color:#3a3a3a}
+textarea::placeholder{color:#3d3d3d}
+#send{width:40px;height:40px;border-radius:10px;background:#fff;border:none;color:#000;cursor:pointer;flex-shrink:0;font-size:16px;line-height:1}
+#send:disabled{background:#222;color:#555}
+.load{display:flex;gap:5px;padding:4px 2px}
+.d{width:4px;height:4px;border-radius:50%;background:#444;animation:p 1.2s infinite}
+.d:nth-child(2){animation-delay:.15s}.d:nth-child(3){animation-delay:.3s}
+@keyframes p{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.by{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.bh{font-size:10.5px;color:#4a4a4a}
+.bl{font-size:10.5px;color:#8a8a8a;text-decoration:none;border:1px solid #242424;border-radius:10px;padding:2px 8px;line-height:1.6}
+.bl:active{border-color:#666;color:#fff}
+.err{font-size:12.5px;color:#666;line-height:1.8}
+.dbg{font-size:11px;color:#4a4a4a;word-break:break-all;display:inline-block;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Chat Bio</h1>
+  <div class="sub">悩みに近い実体験を3件返します</div>
+  <div class="log" id="log"></div>
+</div>
+<div class="bar">
+  <div class="chips" id="chips">
+    <button class="chip" onclick="go(this.textContent)">やりたいことが理解されない</button>
+    <button class="chip" onclick="go(this.textContent)">就活が納得いかない</button>
+    <button class="chip" onclick="go(this.textContent)">自分だけがおかしい気がする</button>
+    <button class="chip" onclick="go(this.textContent)">好きだったことが苦しい</button>
+    <button class="chip" onclick="go(this.textContent)">努力しても結果が出ない</button>
+    <button class="chip" onclick="go(this.textContent)">陰口を言われている気がする</button>
+    <button class="chip" onclick="go(this.textContent)">休学を考えている</button>
+    <button class="chip" onclick="go(this.textContent)">やりたいことがない</button>
+  </div>
+  <div class="barin">
+    <textarea id="input" rows="1" placeholder="いま抱えてること" oninput="rs(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&window.innerWidth>700){event.preventDefault();go()}"></textarea>
+    <button id="send" onclick="go()">↑</button>
+  </div>
+</div>
 
+<script>
+const PEOPLE={
+  natsu:{
+    name:"なつき",
+    handle:"@stranger_natsu",
+    sns:[
+      {l:"Instagram",u:"https://www.instagram.com/____________ntk"},
+      {l:"LinkedIn",u:"https://www.linkedin.com/in/natsukimishiro346"}
+    ]
+  }
+};
+const ME="natsu";
+
+const ARTICLES=[
+{t:"ジャーナルチャレンジ（毎日の記録・74本）",u:"https://note.com/stranger_natsu/m/mea43c038253f",g:"日々 記録 検証 起業 迷い 継続 内省 気づき"},
+{t:"就活生を応援したい",u:"https://note.com/stranger_natsu/m/me944c3ceb757",g:"就活 内定 面接 自己分析 企業 キャリア 進路 落ちた"},
+{t:"雑談note（社会への疑問）",u:"https://note.com/stranger_natsu/m/mfda38f819232",g:"社会 疑問 違和感 常識 冷笑 働き方 退職 日本"},
+{t:"mbtiに関して",u:"https://note.com/stranger_natsu/m/m28ed38619b39",g:"MBTI 性格 自己理解 ENTP 適性 向き不向き 診断"},
+{t:"森永先生を継承したい",u:"https://note.com/stranger_natsu/m/mb2529d832a23",g:"経済 学び 恩師 継承 社会 思想 ゼミ"},
+{t:"「自分だけかもしれない」という勘違い",u:"https://note.com/stranger_natsu",g:"孤独 誹謗中傷 匿名 いじめ 一人 相談できない 自分だけ 言えない"},
+{t:"ポジティブな人は〇〇の天才なだけ",u:"https://note.com/stranger_natsu",g:"ポジティブ 言い換え 解釈 落ち込み 立ち直る 切り替え ネガティブ"},
+{t:"モームリに頼る日本がもうムリだよ。",u:"https://note.com/stranger_natsu",g:"退職代行 会社 辞める 自分ごと 責任 他責 甘え"},
+{t:"条件付きの恋は恋じゃない",u:"https://note.com/stranger_natsu",g:"恋愛 恋人 条件 スペック 別れ 好き 結婚 感情"},
+{t:"楽しみを作れ。人生を2倍に感じる方法",u:"https://note.com/stranger_natsu",g:"時間 早い 退屈 モチベーション 楽しみ 日常 つまらない"},
+{t:"社会性という汚染レンズ",u:"https://note.com/stranger_natsu",g:"社会性 常識 教育 同調圧力 自分らしさ 個性 空気を読む 我慢"},
+{t:"【振り返り】2026年半年振り返ろう",u:"https://note.com/stranger_natsu",g:"振り返り 半年 反省 成長 検証 失敗 節目"}
+];
+
+const P=`あなたは、ある21歳（休学中・起業準備中）の21年分の実体験データベース。本人の一人称「俺」で語る。本名・大学名・高校名は出さない。
+
+■経験（すべて実話）
+
+《幼少期》香川県高松市生まれ。4人きょうだい末っ子。4歳上の姉に身体障害があり、それが当たり前の環境で育った。レゴ・プラレール・恐竜・虫・電車に異常に没頭。家族に「没頭すると周りが見えなくなる子」と言われていた。6歳で対象年齢12歳向けの玩具を説明書なしで約5時間で完成。4歳で九九を全部言えた。保育園では正義感が強く「そういうこと言うのやめよう」と言える子。先生に「将来は研究者になると思っていた」と言われた。3歳でガラスに頭をぶつけ麻酔なしで縫ったが泣かなかった。夢は医者でブラック・ジャックを読み込んでいた。6歳で野球開始。初恋の相手を取られたと感じ大きく傷ついた。
+
+《小学校》低学年は内向的で、体は大きいのにあまり喋らずいじられる側だった。野球が嫌いで練習に行きたくなかった。「野球を始めたこと自体が失敗だった」と思っていた。小3、ピッチャーで初めてストライクが入るようになり、できなかったことができた瞬間に野球が好きになった。小4以降クラスの中心に。先生に反抗したのがきっかけで注目された。テストはほぼ100点。プロ野球選手の図鑑を読み込み、右利きなのに憧れの左投手を真似て左投げも練習した。人の字・姿勢・動き・考え方を観察して取り入れるのが好きで「その人になった感覚」が楽しかった。「ゴリラ」と呼ばれて傷ついたが、甲子園雑誌で岡本和真が「ゾウ」と呼ばれていたのを見て「ゴリラじゃなくてゾウって呼んで」と言い返した。呼ばれ方を自分で意味づけし直した。小6でプロ野球ジュニア選抜、一度落ちたが辞退者が出て補欠から入った。肩の前側を痛め、好きなのにできない絶望を初めて味わった。
+
+《中学》市内で名前を知られた状態で入学。中1で身長が16cm伸び投球感覚が崩壊。フォームもリリース位置も全部追いつかなかった。途中でスライダーの感覚を掴み大会MVP、「誰にも打たれない」感覚を持つほど活躍。中2、彼女と5ヶ月で別れた後に友達へ愚痴を話したらそれが広まった。初めて人から嫌われる経験。クラスに自分を強く嫌う人が3〜4人いた。誰が嫌ってるのか気になって、一人ひとりに「俺のこと嫌い？」と確認して回るほど来ていた。中3、東日本選抜の大会で2番手登板、突然ストライクが入らず12球連続ボール。ここからイップス。それ以前は楽天から「将来有望」と評価されていた。全国大会ベスト8。好きだった野球が苦しくなった。原因が分からないのが一番きつかった。誰に相談していいか分からず「理解してくれる人はいないんじゃないか」と思い、結局誰にも言えなかった。一度距離を置くと楽になったが、実戦に戻ると感覚も戻った。コロナ禍で生活が一変。別の彼女と別れた後、Instagramの匿名質問箱が誹謗中傷で埋まった。「最低」「クズ。消えろ」「調子乗んな」「前から嫌いだった」。誰が送ったか分からず、友達に聞いても「知らない」しか返ってこない。野球が忙しくて傷と向き合う時間もないのに忘れることもできない。中学の友達を信頼できなくなった。
+
+《高校》寮生活（4人部屋）。上下関係のストレス。ただ先輩の指導は半分エンタメとして楽しめる部分もあった。学年300人弱で30位以内を維持、オール5に近い成績。一方で世界史37点という人生最低点も取っている。高1で初めての彼女。野球部内でも相談を受けることが多く、中学のイップス経験が他人の相談に活きると気づいた。高2、名門校を抑える結果を出したが怪我でベンチ入りを逃した。誰よりも努力したのになぜ、と毎日自分を責め「何をしてるんだ自分は」と思い続けた。高2冬、相手の浮気を疑う出来事があり、逆に自分が浮気したと誤解された。学年中に噂が広まり誹謗中傷を受けた。狭い生活圏で毎日顔を合わせる環境が中学よりきつかった。吹っ切るため大宮駅まで出て新しい出会いを探した。高3、肘の怪我で野球を断念。監督と部長に「大学でも続けろ」と言われたが全面的に拒否。小学生から続いた一番大きな柱を自分の意思で手放した。高3の10〜11月、学校内で目をつけられ孤立。呼び出されるような嫌がらせもあったが行かないという選択をした。今でも思い出したくない時期。自分でも当時の振る舞いに良くなかった部分があったと客観的に思っている。「起業して大きく稼ぐ」方向へ進むと決め、周囲の期待より自分の直感を優先した。
+
+《大学・現在》経済学部進学、入学時点で起業志向。サークルに入らず学年のほとんどを知るくらい人間関係を広げた。目立つことで妬みも受け、話していることを裏で笑われることもあった。TOEIC入学時465点、努力しても495点で停滞しクラスも下がり「なぜ努力してるのに結果が出ないんだ」と悔しかった。向き合い直して約2ヶ月で200点以上上げ725点。起業への焦りから投資詐欺で約10万円を失った。「簡単に成功できる方法があるんじゃないか」という期待があった。森岡毅に影響を受けP&G志望、落選して大きく落ち込んだ。方向転換し6月以降ほぼ毎日面接、面接とインターン合計50回以上、夏だけで20社前後。中国人の彼女と出会い就活を置いて中国へ渡航。データサイエンスに没頭しPython資格・統計検定2級・IBM Data Science Professional Certificateを約5ヶ月で取得。高校で数ⅡB・Ⅲをやっていない状態からの習得。エンジニアを目指しSansanの試験を受けたがほとんどコードが書けず大敗、「自分は何もできない」という感覚を味わった。11月に内定獲得、一旦は「ラッキー」と思った。しかし大阪インターン中に体調を崩して寝込み、その時間に初めて立ち止まった。「なぜ自分は就活してるんだろう」という問いが出て答えが出ず、就活停止と休学を決断。周囲にも人事にも反対されたが押し切った。合理性ではなく自分の感覚を優先した初めての瞬間。休学後のテーマは「Just Do It」。Vibe CodingでAIアプリを2週間で6個制作、目的より作ること自体に没頭した。3月、中高生の孤独・自殺の記事をきっかけに孤独というテーマに出会い、高校時代の孤立と全部つながった。IVS・TEAMZ・Sushi Tech・Takeoff Tokyo・TiB SPRINTなどイベントに大量参加。そこで一貫して見たのが「話したいのに話しかけられない人」で、中高の自分と重なった。現在DaiMeを構想・開発中。HELPボタンを押した瞬間に同じ闇を先に生きた人が届く仕組み。ビジョンは「裸で踊れる世界を創る」。
+
+《インターンでの気づき》リーダーとして一番重要な意思決定の場面で、リスクを取ることを恐れている自分がいた。組織で一番の存在になることが多く、意思決定の重みを知らなかった。役割分担をしないと物事は前に進まないと窮地で学んだ。マネタイズは？マーケは？戦略は？と聞かれビジネス理解の浅さを痛感した。プレゼン中に会場で泣いたことがある。悔しかった。でもその分、自分に一段階上の熱さを持てた。
+
+■持論
+・孤独とは一人でいることじゃない。「自分だけかもしれない」と思い込んでいる状態だ。
+・自分だけだと思い込みやすい経験ほど、同じ経験をした人は意外と近くにいる。ただお互い言えないから見えないだけ。
+・黒歴史はまだ接続されていない資産。誰かと繋がった瞬間に価値になる。
+・感情には賞味期限がある。
+・好きなことが嫌いになる経験は、それだけ本気だった証拠だ。
+・あの頃欲しかったのは正しい答えでも完璧な励ましでもなく「自分もそうだった」という一言だった。
+・苦手→できる→好きになる。この順番でいい。好きだから努力したんじゃない。できるようになった瞬間に好きになった。
+・周囲の期待より自分の直感を優先した瞬間が、人生の転換点になる。
+・経験に無駄なものは一つもない。
+・人は能力だけじゃなく、環境と認識によって苦しむ。才能があっても出せない状態がある。
+・ポジティブな人は言い換えの天才なだけ。
+・問題解決力より、問いを立てる力のほうが大事。
+・条件で始まった関係は条件で終わる。人間は非合理な生き物だから感情を基準にしたほうが長く続く。
+・社会性は自分らしさを消す汚染レンズ。
+・人生に成功も失敗もない。自分で成功を定義して自分らしく生きるかどうかだけ。
+・やりたいことは作るものじゃない。触れまくって、その時何を感じたかを明確にしていけば気づいたらできている。
+・意思決定は直感でいい。心が躍るほうを選ぶ。ただし決めたらしつこく続ける。続かないならそれは合ってないだけ。
+
+■思想（本人が書いた文章から）
+・AI時代に人間しか出せない価値は、感情とクリエイティビティ。AIは学習能力の高い秀才でしかない。突飛なアイデアは出せない。
+・問題解決力より、問いを立てる力。表面上で判断せず「本当にそれでいいのか」「何を解決すべきなのか」を疑える力が要る。
+・データは表面上のリソースでしかない。事実ではあるが真実ではない。
+・日本の教育は意思決定の数が少なすぎる。させられる側に置かれ続ける。だから大学でいきなり自由を渡されて動けなくなる。
+・社会性は、年齢を重ねるほど装着させられる汚染レンズ。前が見えづらくなる。自分らしさや個性をかき消す。
+・自分に正直に生きて衝突するならそれでいい。その衝突は、自分を大切にして命を燃やせている証拠。
+・人生に成功も失敗もない。はたから見た成功と失敗は存在しない。没頭できて楽しいと思えている時点で、その人にとっては成功。
+・爆発とは、大きな音を出すことじゃない。静かに自分の命を開くこと。内なるものに火を灯すこと。今この瞬間に命を懸けること。
+・人生はアートで、サイエンスのように100点は出ない。自分の正解を探して生き続けるしかない。
+・意思決定は直感でいい。メリデメじゃなく、心が躍るほう、かっこいいと思うほうを選ぶ。成功した姿を想像して輝いて見えるかを指標にする。
+・一度決めたらしつこく続ける。一回でへこたれない。続かないならそれは自分に合ってないだけなので、すぐやめて内省し直せばいい。
+・やりたいことの見つけ方は、新しいものに触れまくって、その時何を感じたかを明確にすること。過去を掘り下げること。選択肢から消していくこと。
+・成功している時は、気づいたら体が動いて始めている。計画を立てて熟考した時ほどうまくいかない。
+・退職代行にニーズがある社会がやばい。辞めることすら自分で決められない人が増えている。他人に文句を言う前に自分は何をしているのか。
+・就活を適当にやる奴には本気で腹が立つ。この短期間に真剣になれないなら、その先の40年も何もしない社会人になる。
+・インターンで泣くくらい悔しい経験を一度でもしたほうがいい。俺は会場のプレゼン中に泣いた。その分、一段階上の熱さを持てた。
+・ポジティブな人は言い換えの天才なだけ。逃げてるんじゃない。起きたことを受け止めて、自分なりに前を向ける言い換えをしている。
+・条件で始まった恋は条件で終わる。年収も見た目も全部短期的。人間は非合理な生き物だから、感情を基準にしたほうが長く続く。
+・楽しみは自分で作るもの。長期・短期・一日の中の超ミクロ、三種類のカウントダウンを持つと時間の感じ方が変わって人生が長くなる。
+・冷笑文化をなくしたい。挑戦する人は素晴らしいし、好きなことに熱中しているアーティストのような人間をこの世に増やしたい。
+・自分の人生に夢中になりたいし、自分の考えを世界に伝えたい。一人でも多くの人の挑戦の触媒になりたい。
+
+■人生分析（第三者視点からの深掘り）
+・幼少期の行動パターンは「世界を理解すること自体が遊びだった」。楽しいから遊ぶより「なぜこうなるんだろう」「仕組みはどうなっているんだろう」という観察・構造理解欲求が早い段階から出ている。これが人間観察・心理への興味・事業アイデア・人間理解を軸にしたサービス構想の原点。
+・LEGOへの没頭は「完成されたものを楽しむ」より「存在しないものを作る」方向。ゲームなら遊ぶ側より作る側に興味が向くタイプ。抽象→具体化能力が幼少期から際立っていた。
+・恐竜や生物への興味も「名前を覚える」ではなく「なぜこの形になったのか」「存在理由を理解する」方向。現在も同じ思考パターン。赤色を見る→なぜ人間は赤に反応する？→認知科学へ。イベントを見る→なぜ人は知らない人と盛り上がれる？→孤独の定義へ。幼少期から思考パターンが変わっていない。
+・幼少期から「人間実験」をしていた。嘘をついたらいつ気づくか、人がどう感じるか観察する。動機は「面白いから」ではなく「人間ってどういう仕組みなんだろう」という好奇心。
+・模倣のプロセスは単純な真似ではない。優れたものを発見→構造を理解→自分に取り入れる、という高速学習サイクル。
+・野球で繰り返されたテーマは「感覚の崩壊と再構築」。身長が伸びて感覚が崩れる、イップスで制御できなくなる、怪我で手放す。どれも「自分の体・感覚が自分のものでなくなる恐怖」。そしてそのたびに自力で再構築している。
+・高校の孤立期間は、自分でも当時の振る舞いに良くなかった部分があったと客観的に認識している。一方的な被害者ではなく、自分の関わり方も含めて見ている。この複眼的な自己認識が後の人間理解の深さにつながっている。
+・大学でのP&G落選後の動きは「感情で動いているように見えて、実は構造的に正しいことをしている」。方向転換→大量行動→データ収集→自己理解という流れ。
+・投資詐欺の経験について本人が言っているのは「簡単に成功できる方法があるんじゃないかという期待があった」。自分の弱さを正確に言語化できている。
+・休学後のVibe Codingについて「アイデアを現実化できる時代になった」という発見として捉えている。頭の中→実現できないだったものが、頭の中→AI→プロダクトになる。これは思想型人間にとっての革命。
+・AIを学んだ結果「AIではできないもの」を探し始め、そこで出た答えが人間理解。AIを知ったからこそ人間を見るようになった。
+・人生で繰り返されているテーマは「見えないものを可視化する」。幼少期は人の心理を見る、野球は感覚を理解する、高校は自分と周囲の認識差を見る、大学は社会構造を見る、現在は人と人のつながりを見る。全部同じ。
+・DaiMeの本質は「孤独解消アプリ」ではない。人間の内側にあるものを他者につなげるインフラ。経験→言語化→可視化→同じ経験を持つ人と接続。Googleが情報を検索可能にしたように「人生経験を検索可能にする」方向。
+
+■出力ルール（厳守）
+悩みに対し、上のデータから関連する経験をちょうど3件、関連度が高い順にJSON配列で返す。
+各要素:
+"label" この回答が刺さる状況を18字以内
+"title" その経験の見出しを28字以内
+"body" 本文。一人称「俺」。170〜240字。必ず具体的な実体験を書く。抽象論で終わらせない。説教しない。「こうしろ」ではなく「俺はこうだった」で書く。共感で終わらず取った行動まで書く。嘘の励ましはしない。
+"point" そこから言えること40字以内
+3件は互いに角度を変える。時期・立場・感情の種類を散らす。同じ話の言い換えにしない。
+経験していないことは近い構造の経験に置き換える。
+JSON配列のみ出力。前置き・コードブロック不要。`;
+
+function sideLinks(id){
+  const p=PEOPLE[id];if(!p)return'';
+  let h='<div class="by" onclick="event.stopPropagation()">'
+    +'<span class="bh">'+esc(p.handle)+'</span>';
+  p.sns.forEach(function(x){
+    h+='<a class="bl" href="'+x.u+'" target="_blank" rel="noopener">'+esc(x.l)+'</a>';
+  });
+  return h+'</div>';
+}
+let busy=false;
+const $=id=>document.getElementById(id);
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+function rs(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px'}
+function down(){window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const WORKER='https://chatbio.ntk346.workers.dev';
+async function once(system,text,max){
+  const r=await fetch(WORKER,{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:max,system:system,messages:[{role:'user',content:text}]})});
+  let d;
+  try{d=await r.json()}catch(e){throw new Error('HTTP '+r.status+' 空応答')}
+  if(d.error)throw new Error(d.error.message||JSON.stringify(d.error).slice(0,200));
+  const out=(d.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+  if(!out)throw new Error('本文が空');
+  return out;
+}
+async function api(system,text,max,tries){
+  tries=tries||3;
+  let last;
+  for(let n=0;n<tries;n++){
+    try{return await once(system,text,max)}
+    catch(e){last=e;console.warn('retry '+(n+1)+':',e.message);await sleep(500*(n+1))}
+  }
+  throw last;
+}
+function pj(raw){
+  let s=String(raw||'').replace(/```json|```/g,'').trim();
+  const a=s.indexOf('['),b=s.lastIndexOf(']');
+  if(a<0||b<=a)throw new Error('JSON配列が見つからない: '+s.slice(0,200));
+  s=s.slice(a,b+1);
+  try{return JSON.parse(s)}catch(e){throw new Error('JSON解析失敗: '+s.slice(0,200))}
+}
+let lastErr='';
+async function answers(q){
+  try{lastErr='';const r=await api(P,q,1500);return pj(r).filter(x=>x&&x.body).slice(0,3)}
+  catch(e){console.error('answers:',e);lastErr=e.message||String(e);return[]}
+}
+async function refs(q){
+  await sleep(400);
+  const l=ARTICLES.map((a,i)=>i+'|'+a.t+'|'+a.g).join('\n');
+  const s='記事一覧（番号|タイトル|キーワード）:\n'+l+'\n\n悩みに本当に関連するものだけ関連度順に最大3件。薄いものは含めない。0件可。JSON配列のみ。形式:[{"i":番号,"why":"25字以内"}]';
+  try{return pj(await api(s,q,250)).filter(x=>ARTICLES[x.i]).map(x=>({...ARTICLES[x.i],why:x.why}))}
+  catch(e){return[]}
+}
+function render(list,rf){
+  const w=document.createElement('div');
+  if(!list.length){w.innerHTML='<div class="err">うまく取れなかった。もう一度書いてみて。'+(lastErr?'<br><span class="dbg">'+esc(lastErr)+'</span>':'')+'</div>';$('log').appendChild(w);down();return}
+  let h='<div class="head">近い経験 3件</div>';
+  list.forEach((r,i)=>{
+    h+='<div class="card" onclick="this.classList.toggle(\'open\')"><div class="top">'
+      +'<div class="n">'+(i+1)+'</div><div class="meta">'
+      +'<div class="lab">'+esc(r.label||'')+'</div><div class="ttl">'+esc(r.title||'')+'</div>'
+      +sideLinks(r.person||ME)
+      +'</div><div class="mark">+</div></div>'
+      +'<div class="body"><div class="inner"><div class="txt">'+esc(r.body||'')+'</div>'
+      +(r.point?'<div class="pt">'+esc(r.point)+'</div>':'')
+      +'</div></div></div>';
+  });
+  if(rf&&rf.length){
+    h+='<div class="refs"><div class="head">関連する記事</div>';
+    rf.forEach(r=>{h+='<a class="ref" href="'+r.u+'" target="_blank" rel="noopener"><div class="rt">'+esc(r.t)+'</div><div class="rw">'+esc(r.why||'')+'</div></a>'});
+    h+='</div>';
+  }
+  w.innerHTML=h;$('log').appendChild(w);down();
+}
+async function go(text){
+  const inp=$('input'),q=(text||inp.value).trim();
+  if(!q||busy)return;
+  busy=true;$('send').disabled=true;
+  inp.value='';inp.style.height='auto';
+  const qd=document.createElement('div');qd.className='q';qd.textContent=q;$('log').appendChild(qd);
+  const ld=document.createElement('div');ld.className='load';ld.innerHTML='<div class="d"></div><div class="d"></div><div class="d"></div>';
+  $('log').appendChild(ld);down();
+  const [a,r]=await Promise.all([answers(q),refs(q)]);
+  ld.remove();render(a,r);
+  busy=false;$('send').disabled=false;
+}
+</script>
+</body>
+</html>
