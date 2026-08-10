@@ -14,11 +14,17 @@ import type { Person } from '@/types';
 export default function ConnectSheet({
   person,
   personKey,
+  query,
+  about,
   open,
   onClose,
 }: {
   person: Person;
   personKey: string;
+  /** そのときの相談内容 */
+  query?: string;
+  /** 見ていた経験談の見出し、または一言 */
+  about?: string;
   open: boolean;
   onClose: () => void;
 }) {
@@ -48,7 +54,7 @@ export default function ConnectSheet({
       open={open}
       onClose={onClose}
       title={`${person.name} ${person.handle} と繋がる`}
-      subtitle="相談カードを添えると、何に悩んでいるかが最初から伝わります。"
+      subtitle={`${about ? `「${about}」を見ていることと、` : ''}選んだ相談カードが相手に伝わります。`}
       footer={
         sent ? (
           <p className="text-[13px] text-black">送りました。サイドバーの「チャット」から確認できます。</p>
@@ -65,6 +71,8 @@ export default function ConnectSheet({
                     ? '相談カードを送ります。同じようなことで悩んでいて、話を聞かせてほしいです。'
                     : '話を聞かせてほしいです。',
                 cardIds: selected,
+                // 受け手が「どの話を見て来たか」を分かるように文脈も渡す
+                context: { about, query },
               });
               setSent(true);
             }}

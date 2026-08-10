@@ -109,6 +109,13 @@ export type DirectMessage = {
   card?: RequestCard;
   /** 紹介カードの状態。受け手が承認するか辞退するかを決める */
   cardStatus?: 'pending' | 'approved' | 'declined';
+  /** 送り手が何を見て送ってきたか。受け手が背景を理解するために使う */
+  context?: {
+    /** 見ていた経験談の見出し、または一言 */
+    about?: string;
+    /** そのときの相談内容 */
+    query?: string;
+  };
   createdAt: string;
 };
 

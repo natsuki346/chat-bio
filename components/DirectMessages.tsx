@@ -41,6 +41,32 @@ function CardChips({ ids }: { ids: string[] }) {
   );
 }
 
+/**
+ * 受け手が「なぜこのリクエストが来たか」を掴むための背景。
+ * 送り手が見ていた話と、そのときの相談をそのまま出す（作文はしない）。
+ */
+function RequestContext({ context }: { context: NonNullable<DirectMessage['context']> }) {
+  if (!context.about && !context.query) return null;
+
+  return (
+    <div className="mt-1.5 rounded-xl border border-[#e5e5e5] bg-white p-3">
+      <p className="text-[10px] tracking-wide text-[#666666]">このリクエストが来た背景</p>
+      {context.about && (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-black">
+          <span className="text-[#666666]">見ていた話：</span>
+          「{context.about}」
+        </p>
+      )}
+      {context.query && (
+        <p className="mt-1 text-[12px] leading-relaxed text-black">
+          <span className="text-[#666666]">そのときの相談：</span>
+          {context.query}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   return (
     <span
@@ -114,7 +140,11 @@ function ThreadList({
                 <span className="block truncate text-[14px] text-black">{person.name}</span>
                 <span className="mt-0.5 block truncate text-[12px] text-[#666666]">
                   {last.from === 'me' ? 'あなた: ' : ''}
-                  {last.card ? 'レポートを送りました' : last.text}
+                  {last.card
+                    ? 'レポートを送りました'
+                    : last.context
+                      ? '繋がるリクエストを送りました'
+                      : last.text}
                 </span>
               </span>
             </button>
@@ -248,6 +278,8 @@ export default function DirectMessages() {
                           {message.text}
                         </p>
                       </div>
+
+                      {message.context && <RequestContext context={message.context} />}
 
                       {message.card && (
                         <div className="mt-1.5">

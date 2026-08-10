@@ -60,6 +60,8 @@ export default function PersonBadge({
       <ConnectSheet
         person={person}
         personKey={personKey}
+        query={query}
+        about={about}
         open={sheet === 'connect'}
         onClose={() => setSheet(null)}
       />
