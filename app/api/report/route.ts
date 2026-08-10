@@ -4,6 +4,8 @@ import { REPORT_SYSTEM_PROMPT } from '@/lib/prompt';
 import type { MatchReport } from '@/types';
 
 export const runtime = 'nodejs';
+// Vercel の関数タイムアウト。既定（10秒前後）だと途中で切られる（レポート生成で実測12〜13秒）
+export const maxDuration = 60;
 
 function toReport(raw: unknown): MatchReport | null {
   if (typeof raw !== 'object' || raw === null) return null;

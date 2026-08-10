@@ -5,6 +5,8 @@ import { DEFAULT_PERSON } from '@/lib/people';
 import type { Experience, PersonHit, SearchMode } from '@/types';
 
 export const runtime = 'nodejs';
+// Vercel の関数タイムアウト。既定（10秒前後）だと途中で切られる（経験談3件のストリーミングで実測15〜17秒）
+export const maxDuration = 60;
 
 function resolveMode(value: unknown): SearchMode {
   return value === 'person' ? 'person' : 'experience';

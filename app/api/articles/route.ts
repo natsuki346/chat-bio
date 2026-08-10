@@ -4,6 +4,8 @@ import { ARTICLES } from '@/lib/articles';
 import type { Article } from '@/types';
 
 export const runtime = 'nodejs';
+// Vercel の関数タイムアウト。既定（10秒前後）だと途中で切られる（記事選定で実測3秒前後）
+export const maxDuration = 30;
 
 const ARTICLE_SYSTEM_PROMPT = `あなたは記事レコメンダー。ユーザーの悩みに対し、下の記事一覧から関連度の高いものを最大3件選ぶ。
 

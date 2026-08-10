@@ -3,6 +3,8 @@ import { extractJsonArray } from '@/lib/parse';
 import { RESOLUTION_SYSTEM_PROMPT } from '@/lib/prompt';
 
 export const runtime = 'nodejs';
+// Vercel の関数タイムアウト。既定（10秒前後）だと途中で切られる（要約で実測5秒前後）
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   let query: unknown;
