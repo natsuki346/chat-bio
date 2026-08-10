@@ -4,7 +4,6 @@ import PersonCard from './PersonCard';
 import ArticleRefs from './ArticleRefs';
 import LoadingDots from './LoadingDots';
 import ProcessTrail from './ProcessTrail';
-import SaveCardButton from './SaveCardButton';
 import type { ChatTurn, ModelId } from '@/types';
 
 export default function ChatLog({
@@ -58,11 +57,6 @@ export default function ChatLog({
                     />
                   ))}
                 </div>
-                {turn.status === 'done' && (
-                  <div className="pt-1">
-                    <SaveCardButton turn={turn} />
-                  </div>
-                )}
               </>
             ) : (
               <>
@@ -78,11 +72,6 @@ export default function ChatLog({
                     />
                   ))}
                 </div>
-                {turn.status === 'done' && (
-                  <div className="pt-1">
-                    <SaveCardButton turn={turn} />
-                  </div>
-                )}
                 {turn.status === 'done' && <ArticleRefs articles={turn.articles} />}
               </>
             ))}

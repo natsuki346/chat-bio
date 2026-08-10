@@ -7,7 +7,13 @@ import Sidebar, { type SidebarView } from '@/components/Sidebar';
 import MyCards from '@/components/MyCards';
 import DirectMessages from '@/components/DirectMessages';
 import { RecordsProvider } from '@/components/RecordsContext';
-import { getRecordsSnapshot, getServerRecordsSnapshot, subscribeRecords } from '@/lib/records';
+import {
+  deriveTitle,
+  getRecordsSnapshot,
+  getServerRecordsSnapshot,
+  subscribeRecords,
+  updateRecords,
+} from '@/lib/records';
 import {
   clearHistory,
   deleteHistory,
@@ -106,6 +112,52 @@ export default function Page() {
       setLoading(true);
       scrollToBottom();
 
+      /*
+       * やり取りが終わったらカードを作る。
+       * まず素の見出しで作っておき、要約が返ってきたら差し替える。
+       * こうしておくと、要約に失敗してもカード自体は残る。
+       */
+      const saveCard = async (finished: ChatTurn) => {
+        const seen =
+          finished.mode === 'person'
+            ? finished.people.map((hit) => hit.quote)
+            : finished.experiences.map((item) => `${item.title}／${item.point}`);
+
+        updateRecords((prev) => [
+          {
+            id: `card-${finished.id}`,
+            historyId: finished.id,
+            title: deriveTitle(finished.query),
+            query: finished.query,
+            mode: finished.mode,
+            createdAt: new Date().toISOString(),
+            count: seen.length,
+            summary: seen[0],
+            status: 'open',
+          },
+          ...prev.filter((record) => record.id !== `card-${finished.id}`),
+        ]);
+
+        try {
+          const response = await fetch('/api/summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: finished.query, seen, model }),
+          });
+          const data = await response.json().catch(() => null);
+          if (!response.ok || typeof data?.title !== 'string') return;
+          updateRecords((prev) =>
+            prev.map((record) =>
+              record.id === `card-${finished.id}`
+                ? { ...record, title: data.title, overview: data.overview }
+                : record,
+            ),
+          );
+        } catch {
+          // 見出し付けに失敗しても、素の見出しのカードは残る
+        }
+      };
+
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -200,6 +252,7 @@ export default function Page() {
           updateHistory((entries) =>
             entries.map((entry) => (entry.id === id ? { ...entry, turn: finished } : entry)),
           );
+          void saveCard(finished);
           return;
         }
 
@@ -225,6 +278,7 @@ export default function Page() {
         updateHistory((entries) =>
           entries.map((entry) => (entry.id === id ? { ...entry, turn: finished } : entry)),
         );
+        void saveCard(finished);
       } catch (error) {
         const message = error instanceof Error ? error.message : '取得に失敗しました';
         steps.push({ label: '失敗した', detail: message, at: Math.round(performance.now() - startedAt) });

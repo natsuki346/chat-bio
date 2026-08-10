@@ -113,7 +113,7 @@ export default function MyCards({
       {visible.length === 0 ? (
         <p className="text-[13px] leading-relaxed text-[#666666]">
           {records.length === 0
-            ? 'まだカードがありません。相談の結果の下にある「＋ マイカードに追加」で作れます。'
+            ? 'まだカードがありません。相談すると、やり取りから見出しを付けて自動で並びます。'
             : '該当するカードはありません。'}
         </p>
       ) : (
@@ -130,9 +130,9 @@ export default function MyCards({
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] leading-snug text-black">{record.title}</span>
-                    {record.summary && (
-                      <span className="mt-1 block truncate text-[12px] leading-snug text-[#666666]">
-                        {record.summary}
+                    {(record.overview ?? record.summary) && (
+                      <span className="mt-1 block text-[12px] leading-snug text-[#666666]">
+                        {record.overview ?? record.summary}
                       </span>
                     )}
                     {record.resolution && (

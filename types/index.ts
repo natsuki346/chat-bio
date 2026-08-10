@@ -38,8 +38,10 @@ export type ChatRecord = {
   createdAt: string;
   /** 返ってきた件数 */
   count: number;
-  /** 最初に返ってきた見出し／一言。カードの要約に使う */
+  /** 最初に返ってきた見出し／一言 */
   summary?: string;
+  /** 何に対して相談しているのかの概要。やり取りから自動で作る */
+  overview?: string;
   status: RecordStatus;
   /** どの履歴から作ったカードか */
   historyId?: string;
