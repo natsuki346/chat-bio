@@ -96,7 +96,17 @@ export default function Page() {
 
       setTurns((prev) => [
         ...prev,
-        { id, query, mode, experiences: [], people: [], articles: [], status: 'loading', steps: [] },
+        {
+          id,
+          query,
+          mode,
+          experiences: [],
+          people: [],
+          articles: [],
+          followups: [],
+          status: 'loading',
+          steps: [],
+        },
       ]);
       step(
         '相談を受け取った',
@@ -156,6 +166,23 @@ export default function Page() {
         } catch {
           // 見出し付けに失敗しても、素の見出しのカードは残る
         }
+      };
+
+      /**
+       * やり取りから「次に聞きそうなこと」を先回りする。
+       * 出せなくても本体は止めない（その場合は候補が出ないだけ）。
+       */
+      const askFollowups = async (seen: string[]): Promise<string[]> => {
+        const result = await postJson<{ followups: string[] }>('/api/followups', {
+          query,
+          seen,
+          model,
+        }).catch(() => ({ followups: [] }));
+
+        if (result.followups.length > 0) {
+          step('次に聞きそうなことを考えた', `${result.followups.length}件`);
+        }
+        return result.followups;
       };
 
       try {
@@ -237,6 +264,9 @@ export default function Page() {
 
         // 「人を探す」は一言とアカウントだけ見せるので、記事は取りに行かない
         if (mode === 'person') {
+          const followups = await askFollowups(
+            latestPeople.map((hit) => hit.quote),
+          );
           const finished: ChatTurn = {
             id,
             query,
@@ -244,6 +274,7 @@ export default function Page() {
             experiences: [],
             people: latestPeople,
             articles: [],
+            followups,
             status: 'done',
             steps: [...steps],
           };
@@ -256,10 +287,13 @@ export default function Page() {
           return;
         }
 
-        // 記事はストリーミングが終わってから順番に取る
-        const articles = await postJson<{ articles: Article[] }>('/api/articles', { query, model }).catch(
-          () => ({ articles: [] }),
-        );
+        // 記事と「次に聞きたいこと」はストリーミングが終わってから。互いに独立なので並べて取る
+        const [articles, followups] = await Promise.all([
+          postJson<{ articles: Article[] }>('/api/articles', { query, model }).catch(() => ({
+            articles: [],
+          })),
+          askFollowups(latestExperiences.map((item) => `${item.title}／${item.point}`)),
+        ]);
         step('関連記事を選んだ', `12本から${articles.articles.length}件`);
 
         const finished: ChatTurn = {
@@ -269,6 +303,7 @@ export default function Page() {
           experiences: latestExperiences,
           people: [],
           articles: articles.articles,
+          followups,
           status: 'done',
           steps: [...steps],
         };
@@ -352,6 +387,7 @@ export default function Page() {
               experiences: [],
               people: [],
               articles: [],
+              followups: [],
               status: 'error',
               error: 'この相談は、やり取りを保存するようになる前のものです。内容は残っていません。',
               steps: [],
@@ -401,7 +437,7 @@ export default function Page() {
               <h1 className="text-[17px] font-medium tracking-tight text-black">Chat Bio</h1>
             </header>
 
-            <ChatLog turns={turns} model={model} onRetry={handleSubmit} />
+            <ChatLog turns={turns} model={model} onRetry={handleSubmit} onAsk={handleSubmit} />
 
             <div ref={bottomRef} />
 

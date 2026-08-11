@@ -161,6 +161,8 @@ export type ChatTurn = {
   experiences: Experience[];
   people: PersonHit[];
   articles: Article[];
+  /** やり取りから先回りした「次に聞きたいこと」。押すとそのまま次の相談になる */
+  followups: string[];
   /** loading: 最初のチャンク待ち / streaming: 本文が流れている最中 */
   status: 'loading' | 'streaming' | 'done' | 'error';
   error?: string;

@@ -2,6 +2,7 @@ import QueryBubble from './QueryBubble';
 import ExperienceCard from './ExperienceCard';
 import PersonCard from './PersonCard';
 import ArticleRefs from './ArticleRefs';
+import FollowUps from './FollowUps';
 import LoadingDots from './LoadingDots';
 import ProcessTrail from './ProcessTrail';
 import type { ChatTurn, ModelId } from '@/types';
@@ -10,10 +11,13 @@ export default function ChatLog({
   turns,
   model,
   onRetry,
+  onAsk,
 }: {
   turns: ChatTurn[];
   model: ModelId;
   onRetry?: (query: string) => void;
+  /** 「次に聞きたいこと」を押したときに、そのまま次の相談として送る */
+  onAsk?: (query: string) => void;
 }) {
   return (
     <div className="space-y-10">
@@ -77,6 +81,10 @@ export default function ChatLog({
                 {turn.status === 'done' && <ArticleRefs articles={turn.articles} />}
               </>
             ))}
+
+          {turn.status === 'done' && onAsk && (
+            <FollowUps followups={turn.followups} onAsk={onAsk} />
+          )}
         </section>
       ))}
     </div>
