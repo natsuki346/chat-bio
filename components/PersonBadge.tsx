@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import ReportSheet from './ReportSheet';
 import ConnectSheet from './ConnectSheet';
 import { PEOPLE, DEFAULT_PERSON } from '@/lib/people';
@@ -12,6 +12,8 @@ export default function PersonBadge({
   query,
   about,
   model,
+  showName = true,
+  leading,
 }: {
   person?: string;
   /** 何に悩んで相談したか。カードの材料にする */
@@ -19,6 +21,10 @@ export default function PersonBadge({
   /** 相手のどの話・どの一言に反応したか */
   about?: string;
   model: ModelId;
+  /** カードの上部で既に名前を出しているときは false にして重複を避ける */
+  showName?: boolean;
+  /** ボタンの左に差し込むもの（グッドボタン） */
+  leading?: ReactNode;
 }) {
   const personKey = key ?? DEFAULT_PERSON;
   const person = PEOPLE[personKey] ?? PEOPLE[DEFAULT_PERSON];
@@ -29,9 +35,12 @@ export default function PersonBadge({
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-[#666666]">
-        <span>
-          {person.name} {person.handle}
-        </span>
+        {showName && (
+          <span>
+            {person.name} {person.handle}
+          </span>
+        )}
+        {leading}
         <button
           type="button"
           onClick={() => setSheet('chat')}

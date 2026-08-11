@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
-import ConfirmButton from './ConfirmButton';
+import MoreMenu from './MoreMenu';
 import RequestCardView from './RequestCardView';
 import { useRecords } from './RecordsContext';
 import { PEOPLE } from '@/lib/people';
@@ -158,17 +158,22 @@ function ThreadList({
                   {pending}
                 </span>
               )}
-              <span className="text-[10px] text-[#666666] group-hover:hidden group-focus-within:hidden">
+              <span className="text-[10px] text-[#666666] group-hover:hidden group-focus-within:hidden group-has-[[aria-expanded=true]]:hidden">
                 {timeOnly(last.createdAt)}
               </span>
-              <span className="hidden group-hover:inline group-focus-within:inline">
-                <ConfirmButton
-                  label="×"
-                  confirmLabel="消す"
-                  title="このやり取りを消す"
-                  onConfirm={() => deleteThread(key)}
-                  className="rounded px-1.5 py-1 text-[11px] leading-none text-[#666666] hover:bg-white hover:text-black"
-                  confirmClassName="rounded bg-black px-1.5 py-1 text-[10px] leading-none text-white"
+              {/* メニューを開いている間は、行から離れても出したままにする */}
+              <span className="hidden group-hover:inline group-focus-within:inline group-has-[[aria-expanded=true]]:inline">
+                <MoreMenu
+                  label="このやり取りの操作"
+                  items={[
+                    { label: '開く', onSelect: () => onOpen(key) },
+                    {
+                      label: '削除',
+                      confirmLabel: '本当に削除する',
+                      danger: true,
+                      onSelect: () => deleteThread(key),
+                    },
+                  ]}
                 />
               </span>
             </span>

@@ -3,13 +3,45 @@ export type Experience = {
   title: string;
   body: string;
   point: string;
+  /** 相談内容とのマッチ度。0〜100の整数。ストリーミング途中や旧データには無いので任意 */
+  score?: number;
   person?: string;
+};
+
+/**
+ * 出力された1件に「グッド」を付けたという記録。
+ * どんな回答を好むのかを後から見られるように、押した中身も一緒に持つ。
+ */
+export type ReactionTarget = {
+  /** ターンと並び位置から作る安定したキー */
+  key: string;
+  /** そのとき相談していた内容 */
+  query: string;
+  mode: SearchMode;
+  /** 反応した中身。経験談なら見出し、人を探すなら一言 */
+  about: string;
+  /** 経験談のときの要点 */
+  point?: string;
+  /** 経験談のときのマッチ度 */
+  score?: number;
+  person?: string;
+};
+
+export type Reaction = ReactionTarget & {
+  value: 'good';
+  createdAt: string;
 };
 
 /** 「何を打って何を聞いたか」の自動ログ。マイカードとは別物。 */
 export type HistoryEntry = {
   id: string;
   query: string;
+  /** 自分で付け直した名前。無ければ query をそのまま見出しにする */
+  title?: string;
+  /** 一覧の先頭に固定する */
+  pinned?: boolean;
+  /** 一覧から外して別枠に寄せる。消したわけではない */
+  archived?: boolean;
   mode: SearchMode;
   /** 旧データには無いので任意 */
   model?: ModelId;

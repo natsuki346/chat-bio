@@ -12,6 +12,16 @@ function resolveMode(value: unknown): SearchMode {
   return value === 'person' ? 'person' : 'experience';
 }
 
+/**
+ * マッチ度。0〜100の整数に丸める。
+ * モデルが数値を出さない／範囲外を出すことがあるので、読めないときは undefined にして表示側に任せる。
+ */
+function toScore(raw: unknown): number | undefined {
+  const value = typeof raw === 'string' ? Number(raw) : raw;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
 function toExperience(raw: unknown): Experience | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const item = raw as Record<string, unknown>;
@@ -29,6 +39,7 @@ function toExperience(raw: unknown): Experience | null {
     title: title.trim(),
     body: body.trim(),
     point: point.trim(),
+    score: toScore(item.score),
     person: typeof item.person === 'string' ? item.person : DEFAULT_PERSON,
   };
 }
@@ -43,6 +54,7 @@ function toPartialExperience(raw: unknown): Experience | null {
     title: text(item.title),
     body: text(item.body),
     point: text(item.point),
+    score: toScore(item.score),
     person: typeof item.person === 'string' ? item.person : DEFAULT_PERSON,
   };
   const empty = !experience.label && !experience.title && !experience.body && !experience.point;
@@ -114,6 +126,8 @@ export async function POST(request: Request) {
               experiences: items
                 .map((item) => (partial ? toPartialExperience(item) : toExperience(item)))
                 .filter(present)
+                // 並べ替えは確定時だけ。流している最中に入れ替えると読んでいるカードが動く
+                .sort((a, b) => (partial ? 0 : (b.score ?? -1) - (a.score ?? -1)))
                 .slice(0, 3),
             };
 

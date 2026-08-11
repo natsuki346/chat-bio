@@ -54,6 +54,7 @@ export default function ChatLog({
                       streaming={turn.status === 'streaming'}
                       query={turn.query}
                       model={model}
+                      reactionKey={`${turn.id}:${index}`}
                     />
                   ))}
                 </div>
@@ -69,6 +70,7 @@ export default function ChatLog({
                       streaming={turn.status === 'streaming'}
                       query={turn.query}
                       model={model}
+                      reactionKey={`${turn.id}:${index}`}
                     />
                   ))}
                 </div>

@@ -90,6 +90,48 @@ export function updateHistory(next: (prev: HistoryEntry[]) => HistoryEntry[]): v
   for (const listener of listeners) listener();
 }
 
+/** 履歴の名前を付け直す。空にしたら元の文面に戻す。 */
+export function renameHistory(id: string, title: string): void {
+  const next = title.trim();
+  updateHistory((prev) =>
+    prev.map((entry) => (entry.id === id ? { ...entry, title: next || undefined } : entry)),
+  );
+}
+
+/** 一覧の先頭に固定する／外す。 */
+export function togglePinHistory(id: string): void {
+  updateHistory((prev) =>
+    prev.map((entry) => (entry.id === id ? { ...entry, pinned: !entry.pinned } : entry)),
+  );
+}
+
+/** アーカイブに寄せる／戻す。中身は消えない。 */
+export function toggleArchiveHistory(id: string): void {
+  updateHistory((prev) =>
+    prev.map((entry) =>
+      // アーカイブしたものが先頭に固定されたままだと分かりにくいので、ピンは外す
+      entry.id === id ? { ...entry, archived: !entry.archived, pinned: false } : entry,
+    ),
+  );
+}
+
+/** 相談とその結果を、そのまま貼れる文章にする。 */
+export function historyToText(entry: HistoryEntry): string {
+  const lines: string[] = [];
+  if (entry.title) lines.push(entry.title, '');
+  lines.push(`相談: ${entry.query}`);
+
+  const turn = entry.turn;
+  if (turn?.mode === 'person') {
+    for (const hit of turn.people) lines.push('', `「${hit.quote}」`);
+  } else if (turn) {
+    for (const item of turn.experiences) {
+      lines.push('', `【${item.title}】`, item.body, `→ ${item.point}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 /** 対話履歴を1件消す。マイカードは別ストアなので影響しない。 */
 export function deleteHistory(id: string): void {
   updateHistory((prev) => prev.filter((entry) => entry.id !== id));
