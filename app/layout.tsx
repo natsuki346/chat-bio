@@ -21,7 +21,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#ffffff",
+  // スマホのブラウザ枠も背景に馴染ませる
+  themeColor: "#f5f9fc",
   // スマホでキーボードが出たら表示領域自体を縮める。
   // これで入力欄がキーボードに隠れず、せり上がって見える（dvh と組み合わせて効く）
   interactiveWidget: "resizes-content",
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-black">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-ink">{children}</body>
     </html>
   );
 }

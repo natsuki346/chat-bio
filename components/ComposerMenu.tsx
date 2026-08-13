@@ -52,11 +52,11 @@ export default function ComposerMenu<T extends string>({
         aria-expanded={open}
         aria-label={`${label}: ${selected?.label}`}
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-1 rounded-full border border-[#e0e0e0] bg-white px-3 py-1.5 text-[12px] text-black transition-colors hover:border-black disabled:opacity-40"
+        className="flex items-center gap-1 rounded-full border border-line-strong bg-white px-3 py-1.5 text-[12px] text-ink transition-colors hover:border-accent-strong disabled:opacity-40"
       >
         {leading}
         <span className="whitespace-nowrap">{selected?.label}</span>
-        <span aria-hidden className="text-[9px] leading-none text-[#666666]">
+        <span aria-hidden className="text-[9px] leading-none text-muted">
           ▾
         </span>
       </button>
@@ -65,7 +65,7 @@ export default function ComposerMenu<T extends string>({
         <div
           role="menu"
           aria-label={label}
-          className="absolute bottom-full left-0 z-10 mb-2 min-w-[200px] overflow-hidden rounded-xl border border-[#e5e5e5] bg-white py-1 shadow-lg"
+          className="absolute bottom-full left-0 z-10 mb-2 min-w-[200px] overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg"
         >
           {options.map((option) => {
             const active = option.value === selected?.value;
@@ -79,15 +79,15 @@ export default function ComposerMenu<T extends string>({
                   onChange(option.value);
                   setOpen(false);
                 }}
-                className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-[#f5f5f5]"
+                className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-tint"
               >
-                <span aria-hidden className="mt-[2px] w-3 shrink-0 text-[11px] text-black">
+                <span aria-hidden className="mt-[2px] w-3 shrink-0 text-[11px] text-ink">
                   {active ? '✓' : ''}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] leading-snug text-black">{option.label}</span>
+                  <span className="block text-[13px] leading-snug text-ink">{option.label}</span>
                   {option.hint && (
-                    <span className="mt-0.5 block text-[11px] leading-snug text-[#666666]">{option.hint}</span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-muted">{option.hint}</span>
                   )}
                 </span>
               </button>

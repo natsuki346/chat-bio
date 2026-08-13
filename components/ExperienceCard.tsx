@@ -29,20 +29,20 @@ export default function ExperienceCard({
   const person = PEOPLE[experience.person ?? DEFAULT_PERSON] ?? PEOPLE[DEFAULT_PERSON];
 
   return (
-    <article className="border-b border-[#e5e5e5] bg-white py-5">
+    <article className="border-b border-line bg-white py-5">
       {/* 投稿のヘッダー。左に誰の話か、右にマッチ度 */}
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-[13px] font-medium text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-[13px] font-medium text-white"
         >
           {person?.name.slice(0, 1)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-medium leading-tight text-black">
+          <span className="block truncate text-[14px] font-medium leading-tight text-ink">
             {person?.name}
           </span>
-          <span className="block truncate text-[11px] leading-tight text-[#666666]">
+          <span className="block truncate text-[11px] leading-tight text-muted">
             {person?.handle}
           </span>
         </span>
@@ -50,21 +50,21 @@ export default function ExperienceCard({
         {typeof experience.score === 'number' && <MatchStars score={experience.score} />}
       </div>
 
-      <p className="mt-4 min-h-[1.2em] text-[11px] tracking-wide text-[#666666]">
+      <p className="mt-4 min-h-[1.2em] text-[11px] tracking-wide text-muted">
         {experience.label}
       </p>
-      <h3 className="mt-1.5 min-h-[1.2em] text-[16px] font-medium leading-snug text-black">
+      <h3 className="mt-1.5 min-h-[1.2em] text-[16px] font-medium leading-snug text-ink">
         {experience.title || (streaming ? '…' : '')}
       </h3>
 
       {/* 本文は畳まずそのまま出す。チャンクが届くたびに伸びていく */}
-      <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.95] text-black">
+      <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.95] text-ink">
         {experience.body}
       </p>
 
       {/* ストリーミング中はまだ届いていないことがあるので、空なら出さない */}
       {experience.point && (
-        <p className="mt-4 border-l-2 border-[#e5e5e5] pl-3 text-[13px] leading-relaxed text-[#666666]">
+        <p className="mt-4 border-l-2 border-line pl-3 text-[13px] leading-relaxed text-muted">
           {experience.point}
         </p>
       )}

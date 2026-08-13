@@ -57,7 +57,7 @@ export default function ConnectSheet({
       subtitle={`${about ? `「${about}」を見ていることと、` : ''}選んだ相談カードが相手に伝わります。`}
       footer={
         sent ? (
-          <p className="text-[13px] text-black">送りました。サイドバーの「チャット」から確認できます。</p>
+          <p className="text-[13px] text-ink">送りました。サイドバーの「チャット」から確認できます。</p>
         ) : (
           <button
             type="button"
@@ -76,7 +76,7 @@ export default function ConnectSheet({
               });
               setSent(true);
             }}
-            className="w-full rounded-full bg-black px-4 py-3 text-[14px] font-medium text-white transition-opacity disabled:opacity-30"
+            className="w-full rounded-full bg-accent-strong px-4 py-3 text-[14px] font-medium text-white transition-opacity disabled:opacity-30"
           >
             {selected.length > 0 ? `相談カード${selected.length}件を添えて繋がる` : '繋がる'}
           </button>
@@ -84,7 +84,7 @@ export default function ConnectSheet({
       }
     >
       {records.length === 0 ? (
-        <p className="text-[13px] leading-relaxed text-[#666666]">
+        <p className="text-[13px] leading-relaxed text-muted">
           まだ相談カードがありません。相談の結果の下にある「＋ マイカードに追加」で作れます。
         </p>
       ) : (
@@ -98,20 +98,20 @@ export default function ConnectSheet({
                   onClick={() => toggle(record.id)}
                   aria-pressed={active}
                   className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${
-                    active ? 'border-black bg-[#f5f5f5]' : 'border-[#e5e5e5] bg-white hover:border-black'
+                    active ? 'border-accent-strong bg-tint' : 'border-line bg-white hover:border-accent-strong'
                   }`}
                 >
                   <span
                     aria-hidden
                     className={`mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border text-[10px] ${
-                      active ? 'border-black bg-black text-white' : 'border-[#e0e0e0] text-transparent'
+                      active ? 'border-accent-strong bg-accent-strong text-white' : 'border-line-strong text-transparent'
                     }`}
                   >
                     ✓
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] leading-snug text-black">{record.title}</span>
-                    <span className="mt-1 block text-[11px] leading-snug text-[#666666]">
+                    <span className="block text-[13px] leading-snug text-ink">{record.title}</span>
+                    <span className="mt-1 block text-[11px] leading-snug text-muted">
                       {record.mode === 'person' ? '人を探す' : '経験談を探す'} ・ {record.count}件 ・{' '}
                       {formatDate(record.createdAt)}
                     </span>

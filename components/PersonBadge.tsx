@@ -34,7 +34,7 @@ export default function PersonBadge({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-[#666666]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-muted">
         {showName && (
           <span>
             {person.name} {person.handle}
@@ -44,14 +44,14 @@ export default function PersonBadge({
         <button
           type="button"
           onClick={() => setSheet('chat')}
-          className="rounded-full bg-black px-4 py-2 text-[13px] font-medium text-white"
+          className="rounded-full bg-accent-strong px-4 py-2 text-[13px] font-medium text-white"
         >
           チャットする
         </button>
         <button
           type="button"
           onClick={() => setSheet('connect')}
-          className="rounded-full border border-black bg-white px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-[#f5f5f5]"
+          className="rounded-full border border-accent-strong bg-white px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:bg-tint"
         >
           繋がる
         </button>

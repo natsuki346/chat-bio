@@ -43,6 +43,18 @@ export default function MyCards({
   );
   const [filter, setFilter] = useState<Filter>('all');
   const [summarizing, setSummarizing] = useState<string | null>(null);
+  // まとめを手で直しているカード。id と編集中の文章を持つ
+  const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
+
+  /** 手で直したまとめを保存する。空にしたらまとめ自体を消す。 */
+  const saveResolution = () => {
+    if (!editing) return;
+    const text = editing.value.trim();
+    updateRecords((prev) =>
+      prev.map((item) => (item.id === editing.id ? { ...item, resolution: text || undefined } : item)),
+    );
+    setEditing(null);
+  };
 
   const visible = filter === 'all' ? records : records.filter((record) => record.status === filter);
   const openCount = records.filter((record) => record.status === 'open').length;
@@ -86,8 +98,8 @@ export default function MyCards({
   return (
     <div>
       <header className="pb-4">
-        <h1 className="text-[17px] font-medium tracking-tight text-black">マイカード</h1>
-        <p className="mt-1 text-[12px] text-[#666666]">
+        <h1 className="text-[17px] font-medium tracking-tight text-ink">マイカード</h1>
+        <p className="mt-1 text-[12px] text-muted">
           相談 {records.length} 件・未解決 {openCount} 件
         </p>
       </header>
@@ -101,8 +113,8 @@ export default function MyCards({
             aria-pressed={filter === item.value}
             className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
               filter === item.value
-                ? 'border-black bg-black text-white'
-                : 'border-[#e0e0e0] bg-white text-black hover:border-black'
+                ? 'border-accent-strong bg-accent-strong text-white'
+                : 'border-line-strong bg-white text-ink hover:border-accent-strong'
             }`}
           >
             {item.label}
@@ -111,7 +123,7 @@ export default function MyCards({
       </div>
 
       {visible.length === 0 ? (
-        <p className="text-[13px] leading-relaxed text-[#666666]">
+        <p className="text-[13px] leading-relaxed text-muted">
           {records.length === 0
             ? 'まだカードがありません。相談すると、やり取りから見出しを付けて自動で並びます。'
             : '該当するカードはありません。'}
@@ -121,7 +133,7 @@ export default function MyCards({
           {visible.map((record) => {
             const expanded = record.id === selectedId;
             return (
-              <li key={record.id} className="rounded-xl border border-[#e5e5e5] bg-white">
+              <li key={record.id} className="rounded-xl border border-line bg-white">
                 <button
                   type="button"
                   onClick={() => onSelect(expanded ? null : record.id)}
@@ -129,18 +141,18 @@ export default function MyCards({
                   className="flex w-full items-start gap-3 px-4 py-3 text-left"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] leading-snug text-black">{record.title}</span>
+                    <span className="block text-[14px] leading-snug text-ink">{record.title}</span>
                     {(record.overview ?? record.summary) && (
-                      <span className="mt-1 block text-[12px] leading-snug text-[#666666]">
+                      <span className="mt-1 block text-[12px] leading-snug text-muted">
                         {record.overview ?? record.summary}
                       </span>
                     )}
                     {record.resolution && (
-                      <span className="mt-1.5 block truncate border-l-2 border-black pl-2 text-[11px] leading-snug text-[#666666]">
+                      <span className="mt-1.5 block truncate border-l-2 border-accent-strong pl-2 text-[11px] leading-snug text-muted">
                         {record.resolution}
                       </span>
                     )}
-                    <span className="mt-1.5 block text-[11px] text-[#666666]">
+                    <span className="mt-1.5 block text-[11px] text-muted">
                       {record.mode === 'person' ? '人を探す' : '経験談を探す'} ・ {record.count}件 ・{' '}
                       {formatDate(record.createdAt)}
                     </span>
@@ -148,8 +160,8 @@ export default function MyCards({
                   <span
                     className={`shrink-0 rounded-full px-2 py-1 text-[11px] ${
                       record.status === 'open'
-                        ? 'bg-black text-white'
-                        : 'border border-[#e0e0e0] text-[#666666]'
+                        ? 'bg-accent-strong text-white'
+                        : 'border border-line-strong text-muted'
                     }`}
                   >
                     {STATUS_LABEL[record.status]}
@@ -157,8 +169,8 @@ export default function MyCards({
                 </button>
 
                 {expanded && (
-                  <div className="border-t border-[#e5e5e5] px-4 py-3">
-                    <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-black">
+                  <div className="border-t border-line px-4 py-3">
+                    <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">
                       {record.query}
                     </p>
 
@@ -175,8 +187,8 @@ export default function MyCards({
                           aria-pressed={record.status === status}
                           className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
                             record.status === status
-                              ? 'border-black bg-black text-white'
-                              : 'border-[#e0e0e0] bg-white text-black hover:border-black'
+                              ? 'border-accent-strong bg-accent-strong text-white'
+                              : 'border-line-strong bg-white text-ink hover:border-accent-strong'
                           }`}
                         >
                           {STATUS_LABEL[status]}にする
@@ -185,7 +197,7 @@ export default function MyCards({
                       <button
                         type="button"
                         onClick={() => onAskAgain(record.query)}
-                        className="rounded-full border border-[#e0e0e0] bg-white px-3 py-1.5 text-[12px] text-black transition-colors hover:border-black"
+                        className="rounded-full border border-line-strong bg-white px-3 py-1.5 text-[12px] text-ink transition-colors hover:border-accent-strong"
                       >
                         もう一度相談する
                       </button>
@@ -196,33 +208,100 @@ export default function MyCards({
                           deleteRecord(record.id);
                           if (selectedId === record.id) onSelect(null);
                         }}
-                        className="rounded-full border border-[#e0e0e0] bg-white px-3 py-1.5 text-[12px] text-[#666666] transition-colors hover:border-black hover:text-black"
-                        confirmClassName="rounded-full bg-black px-3 py-1.5 text-[12px] text-white"
+                        className="rounded-full border border-line-strong bg-white px-3 py-1.5 text-[12px] text-muted transition-colors hover:border-accent-strong hover:text-ink"
+                        confirmClassName="rounded-full bg-accent-strong px-3 py-1.5 text-[12px] text-white"
                       />
                     </div>
-                    {(record.resolution || summarizing === record.id) && (
-                      <div className="mt-3 rounded-lg border-l-2 border-black bg-[#f5f5f5] px-3 py-2.5">
-                        <p className="text-[11px] tracking-wide text-[#666666]">どう解決したか</p>
+                    {/* 解決済みなら、まとめが無くても枠は出す（自分で書けるように） */}
+                    {(record.resolution ||
+                      summarizing === record.id ||
+                      record.status === 'resolved') && (
+                      <div className="mt-3 rounded-lg border-l-2 border-accent-strong bg-tint px-3 py-2.5">
+                        <p className="text-[11px] tracking-wide text-muted">どう解決したか</p>
+
                         {summarizing === record.id ? (
-                          <p className="mt-1 text-[12px] text-[#666666]">記録からまとめています…</p>
+                          <p className="mt-1 text-[12px] text-muted">記録からまとめています…</p>
+                        ) : editing?.id === record.id ? (
+                          <>
+                            <textarea
+                              autoFocus
+                              value={editing.value}
+                              onChange={(event) =>
+                                setEditing({ id: record.id, value: event.target.value })
+                              }
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') setEditing(null);
+                                // 改行を使うので、保存は ⌘/Ctrl + Enter
+                                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                                  saveResolution();
+                                }
+                              }}
+                              rows={4}
+                              className="mt-1.5 w-full resize-y rounded-lg border border-line-strong bg-white px-2.5 py-2 text-[13px] leading-relaxed text-ink outline-none focus:border-accent-strong"
+                            />
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={saveResolution}
+                                className="rounded-full bg-accent-strong px-3 py-1.5 text-[12px] text-white"
+                              >
+                                保存する
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="rounded-full border border-line-strong bg-white px-3 py-1.5 text-[12px] text-muted transition-colors hover:border-accent-strong hover:text-ink"
+                              >
+                                やめる
+                              </button>
+                            </div>
+                          </>
                         ) : (
                           <>
-                            <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-black">
-                              {record.resolution}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => void summarize(record)}
-                              className="mt-2 text-[11px] text-[#666666] underline underline-offset-2 hover:text-black"
-                            >
-                              作り直す
-                            </button>
+                            {record.resolution ? (
+                              <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-ink">
+                                {record.resolution}
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-[12px] text-muted">
+                                まだまとめがありません。
+                              </p>
+                            )}
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditing({ id: record.id, value: record.resolution ?? '' })
+                                }
+                                className="text-[11px] text-muted underline underline-offset-2 hover:text-ink"
+                              >
+                                {record.resolution ? '編集する' : '自分で書く'}
+                              </button>
+                              {record.resolution ? (
+                                // 手で直した内容が消えるので、作り直しは一度確認する
+                                <ConfirmButton
+                                  label="作り直す"
+                                  confirmLabel="今の内容を捨てて作り直す"
+                                  onConfirm={() => void summarize(record)}
+                                  className="text-[11px] text-muted underline underline-offset-2 hover:text-ink"
+                                  confirmClassName="text-[11px] font-medium text-ink underline underline-offset-2"
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => void summarize(record)}
+                                  className="text-[11px] text-muted underline underline-offset-2 hover:text-ink"
+                                >
+                                  記録からまとめる
+                                </button>
+                              )}
+                            </div>
                           </>
                         )}
                       </div>
                     )}
 
-                    <p className="mt-2 text-[11px] text-[#666666]">
+                    <p className="mt-2 text-[11px] text-muted">
                       カードを削除しても対話履歴は残ります。
                     </p>
                   </div>

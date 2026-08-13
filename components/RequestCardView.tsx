@@ -23,13 +23,13 @@ export default function RequestCardView({
 }) {
   return (
     <div
-      className={`rounded-xl border border-[#e5e5e5] bg-white ${compact ? 'p-3' : 'p-4'} ${
+      className={`rounded-xl border border-line bg-white ${compact ? 'p-3' : 'p-4'} ${
         compact ? 'space-y-2.5' : 'space-y-3.5'
       }`}
     >
       {SECTIONS.map(({ key, label }) => (
         <div key={key}>
-          <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} tracking-wide text-[#666666]`}>
+          <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} tracking-wide text-muted`}>
             {label}
           </p>
           {onChange ? (
@@ -40,13 +40,13 @@ export default function RequestCardView({
               aria-label={label}
               /* 16px 固定：iOS の自動ズーム防止 */
               style={{ fontSize: '16px' }}
-              className="mt-1 w-full resize-none rounded-lg border border-[#e0e0e0] bg-[#f5f5f5] px-2.5 py-2 leading-relaxed text-black transition-colors focus:border-black focus:outline-none"
+              className="mt-1 w-full resize-none rounded-lg border border-line-strong bg-tint px-2.5 py-2 leading-relaxed text-ink transition-colors focus:border-accent-strong focus:outline-none"
             />
           ) : (
             <p
               className={`mt-1 whitespace-pre-wrap ${
                 compact ? 'text-[12px]' : 'text-[13px]'
-              } leading-relaxed text-black`}
+              } leading-relaxed text-ink`}
             >
               {card[key]}
             </p>

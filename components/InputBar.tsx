@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState, type FormEvent } from 'react';
 import ComposerMenu from './ComposerMenu';
+import { SendIcon } from './Icons';
 import { useSpeechInput } from './useSpeechInput';
 import { MODEL_OPTIONS, MODE_OPTIONS } from '@/lib/options';
 import type { ModelId, SearchMode } from '@/types';
@@ -52,7 +53,7 @@ export default function InputBar({
       className={
         docked
           ? // lg でサイドバーのぶん左を空ける
-            'fixed inset-x-0 bottom-0 border-t border-[#e5e5e5] bg-white/95 backdrop-blur lg:left-[260px]'
+            'fixed inset-x-0 bottom-0 border-t border-line bg-background/95 backdrop-blur lg:left-[260px]'
           : 'w-full'
       }
       style={docked ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
@@ -61,7 +62,7 @@ export default function InputBar({
         {/* 入力・モード・モデル・送信をひとつの枠にまとめる */}
         <form
           onSubmit={handleSubmit}
-          className={`rounded-2xl border border-[#e0e0e0] bg-[#f5f5f5] p-2 transition-colors focus-within:border-black ${
+          className={`rounded-2xl border border-line-strong bg-tint p-2 transition-colors focus-within:border-accent-strong ${
             docked ? 'mb-3' : ''
           }`}
         >
@@ -72,7 +73,7 @@ export default function InputBar({
             disabled={loading}
             /* 16px 固定：iOS の自動ズーム防止 */
             style={{ fontSize: '16px' }}
-            className="w-full bg-transparent px-2 pb-2 pt-1 text-black placeholder:text-[#666666] focus:outline-none disabled:opacity-50"
+            className="w-full bg-transparent px-2 pb-2 pt-1 text-ink placeholder:text-muted focus:outline-none disabled:opacity-50"
           />
 
           <div className="flex items-center gap-2">
@@ -83,7 +84,7 @@ export default function InputBar({
               onChange={onModeChange}
               disabled={loading}
               leading={
-                <span aria-hidden className="text-[13px] leading-none text-black">
+                <span aria-hidden className="text-[13px] leading-none text-ink">
                   +
                 </span>
               }
@@ -110,8 +111,8 @@ export default function InputBar({
                 aria-label={speech.listening ? '音声入力を止める' : '音声で入力する'}
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-40 ${
                   speech.listening
-                    ? 'animate-pulse border-black bg-black text-white'
-                    : 'border-[#e0e0e0] bg-white text-black hover:border-black'
+                    ? 'animate-pulse border-accent-strong bg-accent-strong text-white'
+                    : 'border-line-strong bg-white text-ink hover:border-accent-strong'
                 }`}
               >
                 <span aria-hidden className="text-[13px] leading-none">
@@ -124,21 +125,21 @@ export default function InputBar({
               type="submit"
               disabled={loading || !value.trim()}
               aria-label="送る"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-[14px] text-white transition-opacity disabled:opacity-30"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-white transition-opacity disabled:opacity-30"
             >
-              <span aria-hidden>↑</span>
+              <SendIcon className="h-4 w-4" />
             </button>
           </div>
           {speech.listening && (
-            <p className="px-2 pt-1.5 text-[11px] text-[#666666]">聞き取り中… もう一度押すと止まります</p>
+            <p className="px-2 pt-1.5 text-[11px] text-muted">聞き取り中… もう一度押すと止まります</p>
           )}
           {speech.status === 'denied' && (
-            <p className="px-2 pt-1.5 text-[11px] text-[#666666]">
+            <p className="px-2 pt-1.5 text-[11px] text-muted">
               マイクが使えません。ブラウザの設定で許可してください
             </p>
           )}
           {speech.status === 'error' && (
-            <p className="px-2 pt-1.5 text-[11px] text-[#666666]">音声を認識できませんでした</p>
+            <p className="px-2 pt-1.5 text-[11px] text-muted">音声を認識できませんでした</p>
           )}
         </form>
       </div>

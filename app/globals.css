@@ -1,17 +1,44 @@
 @import "tailwindcss";
 
+/*
+ * 相談する場所なので、強い黒ではなく落ち着いた青をベースにする。
+ * #7ba3c9 が基準色。灰色も含めて全部この色相（およそ209度）に寄せて、
+ * 文字や塗りに使う濃さは白との読みやすさ（AA）で決めている。
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
-  --muted: #666666;
-  --border: #e5e5e5;
-  --input-background: #f5f5f5;
-  --input-border: #e0e0e0;
+  --background: #f5f9fc;
+  /* 文字色。真っ黒だときついので、基準色を暗く倒したインクにする */
+  --foreground: #1b2e3f;
+  --muted: #566e82;
+  --faint: #93a7bb;
+  --line: #dce6ef;
+  --line-strong: #c4d4e4;
+  --tint: #edf3f9;
+  --dim: #cbd9e7;
+  /* サイドバーなど、白い本文より一段沈める面。tint よりもう一段濃い */
+  --panel: #e4edf6;
+  /* 基準色。白の上の小さい文字には薄すぎるので、面や飾りに使う */
+  --accent: #7ba3c9;
+  /* 押せるもの・効いている状態。白抜き文字で 4.9:1 あるので本文サイズでも読める */
+  --accent-strong: #43759f;
+  /* 削除だけは色相を外して赤のままにする */
+  --danger: #b8453c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-tint: var(--tint);
+  --color-panel: var(--panel);
+  --color-dim: var(--dim);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

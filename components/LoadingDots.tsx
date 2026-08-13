@@ -4,7 +4,7 @@ export default function LoadingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-1.5 w-1.5 rounded-full bg-[#666666] animate-[chatbio-blink_1.2s_ease-in-out_infinite]"
+          className="h-1.5 w-1.5 rounded-full bg-muted animate-[chatbio-blink_1.2s_ease-in-out_infinite]"
           style={{ animationDelay: `${i * 0.16}s` }}
         />
       ))}

@@ -13,19 +13,19 @@ export default function FollowUps({
 
   return (
     <section className="pt-2">
-      <p className="text-[11px] tracking-wide text-[#666666]">次に聞くとしたら</p>
-      <ul className="mt-1 border-t border-[#e5e5e5]">
+      <p className="text-[11px] tracking-wide text-muted">次に聞くとしたら</p>
+      <ul className="mt-1 border-t border-line">
         {followups.map((question) => (
           <li key={question}>
             <button
               type="button"
               onClick={() => onAsk(question)}
-              className="group flex w-full items-center gap-3 border-b border-[#e5e5e5] py-3 text-left"
+              className="group flex w-full items-center gap-3 border-b border-line py-3 text-left"
             >
-              <span className="min-w-0 flex-1 text-[14px] leading-snug text-black">{question}</span>
+              <span className="min-w-0 flex-1 text-[14px] leading-snug text-ink">{question}</span>
               <span
                 aria-hidden
-                className="shrink-0 text-[16px] leading-none text-[#999999] transition-colors group-hover:text-black"
+                className="shrink-0 text-[16px] leading-none text-faint transition-colors group-hover:text-ink"
               >
                 +
               </span>

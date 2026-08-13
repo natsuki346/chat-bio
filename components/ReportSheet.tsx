@@ -86,11 +86,11 @@ export default function ReportSheet({
       subtitle="なぜこの人が出てきたのか、相手に何が届くのかをまとめました。送る前に直せます。"
       footer={
         phase === 'sent' ? (
-          <p className="text-[13px] text-black">
+          <p className="text-[13px] text-ink">
             送りました。サイドバーの「チャット」から状態を確認できます。
           </p>
         ) : phase === 'failed' ? (
-          <p className="text-[13px] text-[#666666]">{error}</p>
+          <p className="text-[13px] text-muted">{error}</p>
         ) : (
           <button
             type="button"
@@ -107,7 +107,7 @@ export default function ReportSheet({
               });
               setPhase('sent');
             }}
-            className="w-full rounded-full bg-black px-4 py-3 text-[14px] font-medium text-white transition-opacity disabled:opacity-30"
+            className="w-full rounded-full bg-accent-strong px-4 py-3 text-[14px] font-medium text-white transition-opacity disabled:opacity-30"
           >
             {phase === 'writing' ? 'レポートを作っています…' : 'この内容で送る'}
           </button>
@@ -115,13 +115,13 @@ export default function ReportSheet({
       }
     >
       {phase === 'writing' && (
-        <p className="text-[13px] leading-relaxed text-[#666666]">
+        <p className="text-[13px] leading-relaxed text-muted">
           相談内容と、出力された経験を照らし合わせています…
         </p>
       )}
 
       {phase === 'failed' && (
-        <p className="text-[13px] leading-relaxed text-[#666666]">
+        <p className="text-[13px] leading-relaxed text-muted">
           レポートを作れませんでした。閉じてもう一度お試しください。
         </p>
       )}
@@ -130,15 +130,15 @@ export default function ReportSheet({
         <div className="space-y-6">
           {/* ① 送り手が読む */}
           <section>
-            <p className="text-[11px] tracking-wide text-[#666666]">なぜこの人が出てきたか</p>
-            <p className="mt-1.5 whitespace-pre-wrap rounded-xl border-l-2 border-black bg-[#f5f5f5] px-3 py-2.5 text-[13px] leading-relaxed text-black">
+            <p className="text-[11px] tracking-wide text-muted">なぜこの人が出てきたか</p>
+            <p className="mt-1.5 whitespace-pre-wrap rounded-xl border-l-2 border-accent-strong bg-tint px-3 py-2.5 text-[13px] leading-relaxed text-ink">
               {report.matchReason}
             </p>
           </section>
 
           {/* ② 受け手が読む */}
           <section>
-            <p className="text-[11px] tracking-wide text-[#666666]">
+            <p className="text-[11px] tracking-wide text-muted">
               相手に届く内容（{person.name} が読みます）
             </p>
             <div className="mt-1.5">
@@ -151,7 +151,7 @@ export default function ReportSheet({
 
           {/* ③ 送る文面 */}
           <section>
-            <p className="text-[11px] tracking-wide text-[#666666]">最初のメッセージ</p>
+            <p className="text-[11px] tracking-wide text-muted">最初のメッセージ</p>
             <textarea
               value={report.greeting}
               onChange={(event) => setReport({ ...report, greeting: event.target.value })}
@@ -160,7 +160,7 @@ export default function ReportSheet({
               aria-label="最初のメッセージ"
               /* 16px 固定：iOS の自動ズーム防止 */
               style={{ fontSize: '16px' }}
-              className="mt-1.5 w-full resize-none rounded-xl border border-[#e0e0e0] bg-[#f5f5f5] px-3 py-2.5 leading-relaxed text-black transition-colors focus:border-black focus:outline-none disabled:opacity-60"
+              className="mt-1.5 w-full resize-none rounded-xl border border-line-strong bg-tint px-3 py-2.5 leading-relaxed text-ink transition-colors focus:border-accent-strong focus:outline-none disabled:opacity-60"
             />
           </section>
         </div>

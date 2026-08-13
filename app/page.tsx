@@ -401,7 +401,7 @@ export default function Page() {
         type="button"
         onClick={() => setSidebarOpen(true)}
         aria-label="サイドバーを開く"
-        className="fixed left-4 top-4 z-20 rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1.5 text-[12px] text-black lg:hidden"
+        className="fixed left-4 top-4 z-20 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12px] text-ink lg:hidden"
       >
         メニュー
       </button>
@@ -427,14 +427,14 @@ export default function Page() {
             // dvh + interactiveWidget で、スマホのキーボードに合わせて中央がせり上がる
             style={{ minHeight: '100dvh' }}
           >
-            <h1 className="text-[22px] font-medium tracking-tight text-black">Chat Bio</h1>
+            <h1 className="text-[22px] font-medium tracking-tight text-ink">Chat Bio</h1>
             {composer(false)}
           </main>
         ) : (
           // 始まったら入力欄は下に固定して、ログを上に伸ばす
           <main className="mx-auto w-full max-w-[600px] px-5 pt-16 pb-64 lg:pt-10">
             <header className="pb-10">
-              <h1 className="text-[17px] font-medium tracking-tight text-black">Chat Bio</h1>
+              <h1 className="text-[17px] font-medium tracking-tight text-ink">Chat Bio</h1>
             </header>
 
             <ChatLog turns={turns} model={model} onRetry={handleSubmit} onAsk={handleSubmit} />

@@ -29,17 +29,17 @@ export default function MatchStars({ score }: { score: number }) {
       className="flex shrink-0 items-center gap-2"
       aria-label={`マッチ度 ${score}パーセント、星${level}`}
     >
-      {/* 灰色の5つを下敷きにして、黒い5つをレベル分だけ幅で見せる（半分の星もそのまま出る） */}
+      {/* 薄い5つを下敷きにして、濃い5つをレベル分だけ幅で見せる（半分の星もそのまま出る） */}
       <span className="relative inline-flex" aria-hidden>
-        <Row className="flex text-[#dcdcdc]" />
+        <Row className="flex text-dim" />
         <span
           className="absolute inset-y-0 left-0 overflow-hidden"
           style={{ width: `${(level / 5) * 100}%` }}
         >
-          <Row className="flex text-black" />
+          <Row className="flex text-accent-strong" />
         </span>
       </span>
-      <span className="text-[17px] font-medium tabular-nums leading-none text-black">{score}%</span>
+      <span className="text-[17px] font-medium tabular-nums leading-none text-ink">{score}%</span>
     </span>
   );
 }

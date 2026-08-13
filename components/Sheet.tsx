@@ -31,24 +31,24 @@ export default function Sheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/30" />
+      <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-ink/40" />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative flex max-h-[80dvh] w-full max-w-[520px] flex-col rounded-t-2xl border border-[#e5e5e5] bg-white sm:rounded-2xl"
+        className="relative flex max-h-[80dvh] w-full max-w-[520px] flex-col rounded-t-2xl border border-line bg-white sm:rounded-2xl"
       >
-        <div className="border-b border-[#e5e5e5] px-5 py-4">
-          <p className="text-[15px] font-medium text-black">{title}</p>
-          {subtitle && <p className="mt-1 text-[12px] leading-relaxed text-[#666666]">{subtitle}</p>}
+        <div className="border-b border-line px-5 py-4">
+          <p className="text-[15px] font-medium text-ink">{title}</p>
+          {subtitle && <p className="mt-1 text-[12px] leading-relaxed text-muted">{subtitle}</p>}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
 
-        <div className="border-t border-[#e5e5e5] px-5 py-4">
+        <div className="border-t border-line px-5 py-4">
           {footer}
-          <p className="mt-2 text-center text-[11px] text-[#666666]">
+          <p className="mt-2 text-center text-[11px] text-muted">
             ※ この端末の中だけに保存されます。相手には届きません
           </p>
         </div>

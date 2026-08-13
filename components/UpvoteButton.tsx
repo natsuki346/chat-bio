@@ -31,8 +31,8 @@ export default function UpvoteButton({ target }: { target: ReactionTarget }) {
       title={on ? '高評価を外す' : 'この話が参考になった'}
       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${
         on
-          ? 'border-black bg-black text-white'
-          : 'border-[#e0e0e0] bg-white text-[#666666] hover:border-black hover:text-black'
+          ? 'border-accent-strong bg-accent-strong text-white'
+          : 'border-line-strong bg-white text-muted hover:border-accent-strong hover:text-ink'
       }`}
     >
       <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current" aria-hidden>

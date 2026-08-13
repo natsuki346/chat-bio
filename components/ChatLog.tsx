@@ -30,15 +30,15 @@ export default function ChatLog({
           {turn.status === 'loading' && <LoadingDots />}
 
           {turn.status === 'error' && (
-            <div className="rounded-lg border border-[#e5e5e5] bg-white px-3 py-2.5">
-              <p className="text-[13px] leading-relaxed text-[#666666]">
+            <div className="rounded-lg border border-line bg-white px-3 py-2.5">
+              <p className="text-[13px] leading-relaxed text-muted">
                 {turn.error ?? '取得に失敗しました。もう一度試してください'}
               </p>
               {onRetry && (
                 <button
                   type="button"
                   onClick={() => onRetry(turn.query)}
-                  className="mt-2 rounded-full border border-[#e0e0e0] bg-white px-3 py-1.5 text-[12px] text-black transition-colors hover:border-black"
+                  className="mt-2 rounded-full border border-line-strong bg-white px-3 py-1.5 text-[12px] text-ink transition-colors hover:border-accent-strong"
                 >
                   もう一度相談する
                 </button>
@@ -49,8 +49,8 @@ export default function ChatLog({
           {(turn.status === 'streaming' || turn.status === 'done') &&
             (turn.mode === 'person' ? (
               <>
-                <p className="text-[11px] tracking-wide text-[#666666]">こう言っている人がいる</p>
-                <div className="border-t border-[#e5e5e5]">
+                <p className="text-[11px] tracking-wide text-muted">こう言っている人がいる</p>
+                <div className="border-t border-line">
                   {turn.people.map((hit, index) => (
                     <PersonCard
                       key={`${turn.id}-${index}`}
@@ -65,8 +65,8 @@ export default function ChatLog({
               </>
             ) : (
               <>
-                <p className="text-[11px] tracking-wide text-[#666666]">同じ経験をした人の話</p>
-                <div className="border-t border-[#e5e5e5]">
+                <p className="text-[11px] tracking-wide text-muted">同じ経験をした人の話</p>
+                <div className="border-t border-line">
                   {turn.experiences.map((experience, index) => (
                     <ExperienceCard
                       key={`${turn.id}-${index}`}

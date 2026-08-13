@@ -1,9 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import ConfirmButton from './ConfirmButton';
 import MoreMenu from './MoreMenu';
+import { CardsIcon, ChatIcon, ComposeIcon } from './Icons';
 import { formatDate } from '@/lib/records';
+import {
+  getMessagesSnapshot,
+  getServerMessagesSnapshot,
+  subscribeMessages,
+} from '@/lib/messages';
 import {
   historyToText,
   renameHistory,
@@ -45,6 +51,14 @@ export default function Sidebar({
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
+  // 承認待ちが残っているとナビに数を出す（見落とさないように）
+  const messages = useSyncExternalStore(
+    subscribeMessages,
+    getMessagesSnapshot,
+    getServerMessagesSnapshot,
+  );
+  const pending = messages.filter((message) => message.cardStatus === 'pending').length;
+
   const commitRename = () => {
     if (renaming) renameHistory(renaming.id, renaming.value);
     setRenaming(null);
@@ -77,11 +91,18 @@ export default function Sidebar({
             if (event.key === 'Enter') commitRename();
             if (event.key === 'Escape') setRenaming(null);
           }}
-          className="w-full rounded-lg border border-black bg-white px-2 py-1.5 text-[12px] text-black outline-none"
+          className="w-full rounded-lg border border-accent-strong bg-white px-2 py-1.5 text-[12px] text-ink outline-none"
         />
       </li>
     ) : (
       <li key={entry.id} className="group relative">
+        {/* 開いている相談だけ、左に色の帯を出す */}
+        {entry.id === activeHistoryId && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-accent"
+          />
+        )}
         <button
           type="button"
           onClick={() => {
@@ -90,16 +111,22 @@ export default function Sidebar({
           }}
           aria-current={entry.id === activeHistoryId ? 'page' : undefined}
           className={`flex w-full items-center gap-2 rounded-lg py-2 pl-2.5 pr-14 text-left transition-colors ${
-            entry.id === activeHistoryId ? 'bg-[#f5f5f5]' : 'hover:bg-[#f5f5f5]'
+            entry.id === activeHistoryId
+              ? 'bg-white shadow-[0_1px_2px_rgba(27,46,63,0.06)]'
+              : 'hover:bg-white/70'
           }`}
         >
           {/* 付け直した名前があればそれを、無ければ打った文面をそのまま出す */}
-          <span className="min-w-0 flex-1 truncate text-[12px] text-black">
+          <span
+            className={`min-w-0 flex-1 truncate text-[12px] ${
+              entry.id === activeHistoryId ? 'font-medium text-accent-strong' : 'text-ink'
+            }`}
+          >
             {entry.title ?? entry.query}
           </span>
         </button>
 
-        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[#666666] group-hover:opacity-0 group-focus-within:opacity-0 group-has-[[aria-expanded=true]]:opacity-0">
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-faint group-hover:opacity-0 group-focus-within:opacity-0 group-has-[[aria-expanded=true]]:opacity-0">
           {formatDate(entry.createdAt)}
         </span>
         {/* メニューを開いている間は、行から離れても出したままにする */}
@@ -139,9 +166,12 @@ export default function Sidebar({
       </li>
     );
 
+  // サイドバー自体に色を敷いてあるので、選ばれているものは白く「浮かせて」出す
   const navClass = (active: boolean) =>
     `flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
-      active ? 'bg-[#f5f5f5] text-black' : 'text-black hover:bg-[#f5f5f5]'
+      active
+        ? 'bg-white font-medium text-accent-strong shadow-[0_1px_2px_rgba(27,46,63,0.06)]'
+        : 'text-ink hover:bg-white/70'
     }`;
 
   return (
@@ -152,23 +182,25 @@ export default function Sidebar({
           type="button"
           aria-label="閉じる"
           onClick={onClose}
-          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-ink/40 lg:hidden"
         />
       )}
 
       <aside
         aria-label="サイドバー"
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-[#e5e5e5] bg-white transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-line-strong bg-panel transition-transform lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between px-3 py-4">
-          <span className="px-1 text-[13px] font-medium text-black">Chat Bio</span>
+          <span className="px-1 text-[13px] font-medium tracking-tight text-accent-strong">
+            Chat Bio
+          </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="閉じる"
-            className="px-1 text-[16px] leading-none text-[#666666] lg:hidden"
+            className="px-1 text-[16px] leading-none text-muted lg:hidden"
           >
             ×
           </button>
@@ -183,9 +215,7 @@ export default function Sidebar({
             }}
             className={navClass(false)}
           >
-            <span aria-hidden className="text-[13px] leading-none">
-              +
-            </span>
+            <ComposeIcon />
             新しい相談
           </button>
           <button
@@ -197,9 +227,7 @@ export default function Sidebar({
             aria-current={view === 'cards' ? 'page' : undefined}
             className={navClass(view === 'cards')}
           >
-            <span aria-hidden className="text-[13px] leading-none">
-              ▤
-            </span>
+            <CardsIcon />
             マイカード
           </button>
           <button
@@ -211,44 +239,54 @@ export default function Sidebar({
             aria-current={view === 'dm' ? 'page' : undefined}
             className={navClass(view === 'dm')}
           >
-            <span aria-hidden className="text-[13px] leading-none">
-              ✉
-            </span>
+            <ChatIcon />
             チャット
+            {pending > 0 && (
+              <span
+                title="承認待ち"
+                className="ml-auto rounded-full bg-accent-strong px-1.5 py-0.5 text-[10px] font-medium leading-none text-white"
+              >
+                {pending}
+              </span>
+            )}
           </button>
         </nav>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-          <p className="px-2.5 pb-1 text-[11px] text-[#666666]">
+        {/* 履歴だけ一段明るくして、上のナビと面を分ける */}
+        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line-strong bg-tint px-3 pb-4 pt-3">
+          <p className="flex items-center gap-1.5 px-2.5 pb-1.5 text-[11px] font-medium tracking-wide text-accent-strong">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
             {showArchived ? 'アーカイブ' : '履歴'}
           </p>
           {history.length === 0 ? (
-            <p className="px-2.5 text-[12px] leading-relaxed text-[#666666]">
+            <p className="px-2.5 text-[12px] leading-relaxed text-muted">
               相談するとここに残ります。
             </p>
           ) : (
             <>
               {pinned.length > 0 && (
                 <>
-                  <p className="px-2.5 pb-0.5 pt-1 text-[10px] text-[#999999]">ピン留め</p>
+                  <p className="px-2.5 pb-0.5 pt-1 text-[10px] tracking-wide text-faint">
+                    ピン留め
+                  </p>
                   <ul>{pinned.map(row)}</ul>
                 </>
               )}
 
               {listed.length === 0 ? (
-                <p className="px-2.5 text-[12px] leading-relaxed text-[#666666]">
+                <p className="px-2.5 text-[12px] leading-relaxed text-muted">
                   {showArchived ? 'アーカイブはありません。' : 'ここに並ぶ相談はありません。'}
                 </p>
               ) : (
                 <ul>{listed.map(row)}</ul>
               )}
 
-              <div className="mt-2 space-y-1.5 border-t border-[#e5e5e5] px-2.5 pt-2">
+              <div className="mt-2 space-y-1.5 border-t border-line-strong px-2.5 pt-2">
                 {(archived.length > 0 || showArchived) && (
                   <button
                     type="button"
                     onClick={() => setShowArchived((prev) => !prev)}
-                    className="block text-left text-[11px] text-[#666666] hover:text-black"
+                    className="block text-left text-[11px] text-accent-strong hover:underline hover:underline-offset-2"
                   >
                     {showArchived ? '履歴に戻る' : `アーカイブを見る（${archived.length}）`}
                   </button>
@@ -257,8 +295,8 @@ export default function Sidebar({
                   label="履歴をすべて消す"
                   confirmLabel="本当に消す（マイカードは残ります）"
                   onConfirm={onClearHistory}
-                  className="block text-left text-[11px] text-[#666666] hover:text-black"
-                  confirmClassName="block text-left text-[11px] font-medium text-black"
+                  className="block text-left text-[11px] text-muted hover:text-ink"
+                  confirmClassName="block text-left text-[11px] font-medium text-ink"
                 />
               </div>
             </>

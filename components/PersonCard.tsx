@@ -21,8 +21,8 @@ export default function PersonCard({
   reactionKey: string;
 }) {
   return (
-    <article className="border-b border-[#e5e5e5] bg-white py-4">
-      <p className="text-[15px] leading-relaxed text-black">
+    <article className="border-b border-line bg-white py-4">
+      <p className="text-[15px] leading-relaxed text-ink">
         「{hit.quote}
         {hit.quote || !streaming ? '」' : ''}
       </p>
