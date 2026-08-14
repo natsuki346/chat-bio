@@ -12,6 +12,7 @@ export default function ComposerMenu<T extends string>({
   onChange,
   disabled,
   leading,
+  heading,
 }: {
   label: string;
   options: Option<T>[];
@@ -19,6 +20,8 @@ export default function ComposerMenu<T extends string>({
   onChange: (value: T) => void;
   disabled?: boolean;
   leading?: ReactNode;
+  /** 一覧の先頭に出す見出し。何の一覧なのかを示す */
+  heading?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -65,8 +68,12 @@ export default function ComposerMenu<T extends string>({
         <div
           role="menu"
           aria-label={label}
-          className="absolute bottom-full left-0 z-10 mb-2 min-w-[200px] overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg"
+          className="absolute bottom-full left-0 z-10 mb-2 min-w-[220px] overflow-hidden rounded-xl border border-line bg-white shadow-lg"
         >
+          {heading && (
+            <div className="border-b border-line bg-tint px-3 py-2">{heading}</div>
+          )}
+          <div className="py-1">
           {options.map((option) => {
             const active = option.value === selected?.value;
             return (
@@ -93,6 +100,7 @@ export default function ComposerMenu<T extends string>({
               </button>
             );
           })}
+          </div>
         </div>
       )}
     </div>

@@ -29,6 +29,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type CallOptions = {
   system: string;
+  /**
+   * system の後ろに足す、キャッシュしない部分。
+   * 語り口のようにリクエストごとに変わるものはここに置く（前半の BIO はキャッシュを効かせたい）。
+   */
+  systemSuffix?: string;
   user: string;
   model?: ModelId;
   maxTokens?: number;
@@ -41,8 +46,13 @@ type CallOptions = {
  * ※キャッシュが効く最小長はモデル依存（Sonnet 4.6 は1024トークン、Haiku 4.5 / Opus 4.6 は4096トークン）。
  *   下回るモデルでは黙って無視されるだけでエラーにはならない。
  */
-function cachedSystem(system: string) {
-  return [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }];
+function cachedSystem(system: string, suffix?: string): Anthropic.TextBlockParam[] {
+  const blocks: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
+  ];
+  // 後ろに足す分にはキャッシュを付けない。前半だけが使い回される
+  if (suffix) blocks.push({ type: 'text', text: suffix });
+  return blocks;
 }
 
 /** 経験を引いて整形するだけの用途なので、既定の high まで考え込ませない。 */
@@ -58,6 +68,7 @@ function outputConfig(model: ModelId, effort: NonNullable<CallOptions['effort']>
 /** Claude を叩いてテキストを返す。3回までリトライ（バックオフ 500ms / 1000ms / 1500ms）。 */
 export async function callClaude({
   system,
+  systemSuffix,
   user,
   model,
   maxTokens = 4096,
@@ -70,7 +81,7 @@ export async function callClaude({
       const response = await getClient().messages.create({
         model: model ?? DEFAULT_MODEL,
         max_tokens: maxTokens,
-        system: cachedSystem(system),
+        system: cachedSystem(system, systemSuffix),
         ...outputConfig(model ?? DEFAULT_MODEL, effort),
         messages: [{ role: 'user', content: user }],
       });
@@ -101,6 +112,7 @@ export async function callClaude({
  */
 export async function* streamClaude({
   system,
+  systemSuffix,
   user,
   model,
   maxTokens = 4096,
@@ -116,7 +128,7 @@ export async function* streamClaude({
       const stream = client.messages.stream({
         model: model ?? DEFAULT_MODEL,
         max_tokens: maxTokens,
-        system: cachedSystem(system),
+        system: cachedSystem(system, systemSuffix),
         ...outputConfig(model ?? DEFAULT_MODEL, effort),
         messages: [{ role: 'user', content: user }],
       });

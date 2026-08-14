@@ -49,7 +49,9 @@ export type HistoryEntry = {
   count: number;
   /** 最初に返ってきた見出し／一言 */
   summary?: string;
-  /** 開き直せるようにやり取りそのものを持つ */
+  /** 開き直せるように、この相談で交わしたやり取りを順に持つ */
+  turns?: ChatTurn[];
+  /** 1相談＝1往復だった頃の記録。読むときだけ使う */
   turn?: ChatTurn;
 };
 
@@ -173,3 +175,6 @@ export type ModelId = 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-
 
 /** 検索モード。いまは両モードとも同じ API を叩き、見た目だけが切り替わる。 */
 export type SearchMode = 'experience' | 'person';
+
+/** 語り口。返ってくる話の中身は変えず、話し方だけを変える。 */
+export type Tone = 'friend' | 'mentor' | 'expert';

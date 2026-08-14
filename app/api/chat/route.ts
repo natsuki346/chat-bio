@@ -1,8 +1,8 @@
 import { resolveModel, streamClaude } from '@/lib/anthropic';
 import { extractJsonArray, parsePartialJsonArray } from '@/lib/parse';
-import { PERSON_SYSTEM_PROMPT, SYSTEM_PROMPT } from '@/lib/prompt';
+import { PERSON_SYSTEM_PROMPT, SYSTEM_PROMPT, TONE_PROMPTS } from '@/lib/prompt';
 import { DEFAULT_PERSON } from '@/lib/people';
-import type { Experience, PersonHit, SearchMode } from '@/types';
+import type { Experience, PersonHit, SearchMode, Tone } from '@/types';
 
 export const runtime = 'nodejs';
 // Vercel の関数タイムアウト。既定（10秒前後）だと途中で切られる（経験談3件のストリーミングで実測15〜17秒）
@@ -10,6 +10,10 @@ export const maxDuration = 60;
 
 function resolveMode(value: unknown): SearchMode {
   return value === 'person' ? 'person' : 'experience';
+}
+
+function resolveTone(value: unknown): Tone {
+  return value === 'friend' || value === 'expert' ? value : 'mentor';
 }
 
 /**
@@ -77,12 +81,14 @@ export async function POST(request: Request) {
   let query: unknown;
   let model: unknown;
   let mode: SearchMode = 'experience';
+  let tone: Tone = 'mentor';
 
   try {
     const body = await request.json();
     query = body?.query;
     model = body?.model;
     mode = resolveMode(body?.mode);
+    tone = resolveTone(body?.tone);
   } catch {
     return Response.json({ error: 'リクエストの形式が不正です' }, { status: 400 });
   }
@@ -134,6 +140,8 @@ export async function POST(request: Request) {
       try {
         for await (const chunk of streamClaude({
           system: isPerson ? PERSON_SYSTEM_PROMPT : SYSTEM_PROMPT,
+          // 語り口は後ろに足す。前半（BIO）のキャッシュを壊さないため
+          systemSuffix: TONE_PROMPTS[tone],
           user: (query as string).trim(),
           model: resolveModel(model),
           // 一言だけなら出力が短いので上限も絞る

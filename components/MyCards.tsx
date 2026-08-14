@@ -4,7 +4,12 @@ import { useState, useSyncExternalStore } from 'react';
 import { useRecords } from './RecordsContext';
 import ConfirmButton from './ConfirmButton';
 import { STATUS_LABEL, deleteRecord, formatDate, updateRecords } from '@/lib/records';
-import { getHistorySnapshot, getServerHistorySnapshot, subscribeHistory } from '@/lib/history';
+import {
+  getHistorySnapshot,
+  getServerHistorySnapshot,
+  historyTurns,
+  subscribeHistory,
+} from '@/lib/history';
 import {
   getMessagesSnapshot,
   getServerMessagesSnapshot,
@@ -69,12 +74,13 @@ export default function MyCards({
   const summarize = async (record: ChatRecord) => {
     setSummarizing(record.id);
     try {
-      const turn = history.find((entry) => entry.id === record.historyId)?.turn;
-      const seen = turn
-        ? turn.mode === 'person'
+      const entry = history.find((item) => item.id === record.historyId);
+      // 続けて聞いたぶんも材料にする
+      const seen = (entry ? historyTurns(entry) : []).flatMap((turn) =>
+        turn.mode === 'person'
           ? turn.people.map((hit) => hit.quote)
-          : turn.experiences.map((item) => `${item.title}／${item.point}`)
-        : [];
+          : turn.experiences.map((item) => `${item.title}／${item.point}`),
+      );
       const chat = messages.map(
         (message) => `${message.from === 'me' ? '自分' : '相手'}: ${message.text}`,
       );

@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from 'react';
 import MoreMenu from './MoreMenu';
 import RequestCardView from './RequestCardView';
-import { BackIcon, ChatIcon, SendIcon } from './Icons';
+import { BackIcon, PaperPlaneIcon, SendIcon } from './Icons';
+import { autoGrow, useSubmitKey } from './useSubmitKey';
 import { useRecords } from './RecordsContext';
 import { PEOPLE } from '@/lib/people';
 import {
@@ -113,7 +121,7 @@ function ThreadList({
   if (threads.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-2xl border border-line bg-white px-5 py-10 text-center">
-        <ChatIcon className="h-8 w-8 text-accent" />
+        <PaperPlaneIcon className="h-8 w-8 text-accent" />
         <p className="mt-3 text-[13px] leading-relaxed text-muted">
           まだやり取りがありません。
           <br />
@@ -208,6 +216,12 @@ export default function DirectMessages() {
   const [openPerson, setOpenPerson] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
+
+  // 入力に合わせて高さを合わせ直す
+  useLayoutEffect(() => {
+    autoGrow(draftRef.current, 120);
+  }, [draft]);
 
   const person = openPerson ? PEOPLE[openPerson] : undefined;
   const thread = openPerson ? messages.filter((message) => message.person === openPerson) : [];
@@ -223,12 +237,18 @@ export default function DirectMessages() {
   const gate = lastCard?.cardStatus;
   const locked = gate === 'pending' || gate === 'declined';
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
+  const send = () => {
     const text = draft.trim();
     if (!text || !openPerson || locked) return;
     setDraft('');
     sendMessage({ person: openPerson, from: 'me', text, cardIds: [] });
+  };
+
+  const submitKey = useSubmitKey(send);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    send();
   };
 
   // 一覧
@@ -236,7 +256,7 @@ export default function DirectMessages() {
     return (
       <div className="mx-auto w-full max-w-[600px] px-5 pt-16 pb-20 lg:pt-10">
         <header className="flex items-baseline gap-2 pb-4">
-          <h1 className="text-[17px] font-medium tracking-tight text-ink">チャット</h1>
+          <h1 className="text-[17px] font-medium tracking-tight text-ink">DMs</h1>
           {/* 承認待ちが残っているなら見出しの横で知らせる */}
           {messages.some((message) => message.cardStatus === 'pending') && (
             <span className="rounded-full bg-accent-strong px-2 py-0.5 text-[10px] font-medium leading-none text-white">
@@ -256,7 +276,7 @@ export default function DirectMessages() {
         <button
           type="button"
           onClick={() => setOpenPerson(null)}
-          aria-label="チャット一覧に戻る"
+          aria-label="DMs一覧に戻る"
           className="-ml-1 rounded-lg p-1 text-ink transition-colors hover:bg-tint"
         >
           <BackIcon className="h-5 w-5" />
@@ -372,15 +392,19 @@ export default function DirectMessages() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="flex items-center gap-2 rounded-full border border-line-strong bg-tint px-2 py-1.5 transition-colors focus-within:border-accent-strong"
+            // 複数行になっても崩れないよう、下端に合わせて伸ばす
+            className="flex items-end gap-2 rounded-2xl border border-line-strong bg-tint px-2 py-1.5 transition-colors focus-within:border-accent-strong"
           >
-            <input
+            <textarea
+              ref={draftRef}
+              rows={1}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="メッセージを入力"
+              placeholder="メッセージを入力（Shift+Enter で改行）"
+              {...submitKey}
               /* 16px 固定：iOS の自動ズーム防止 */
               style={{ fontSize: '16px' }}
-              className="min-w-0 flex-1 bg-transparent px-2 text-ink placeholder:text-muted focus:outline-none"
+              className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-1 leading-relaxed text-ink placeholder:text-muted focus:outline-none"
             />
             <button
               type="submit"

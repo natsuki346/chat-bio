@@ -6,7 +6,10 @@ import InputBar from '@/components/InputBar';
 import Sidebar, { type SidebarView } from '@/components/Sidebar';
 import MyCards from '@/components/MyCards';
 import DirectMessages from '@/components/DirectMessages';
+import ThreadOutline from '@/components/ThreadOutline';
 import { RecordsProvider } from '@/components/RecordsContext';
+import { BrainMark } from '@/components/Icons';
+import { TONE_OPTIONS } from '@/lib/options';
 import {
   deriveTitle,
   getRecordsSnapshot,
@@ -18,6 +21,7 @@ import {
   clearHistory,
   deleteHistory,
   getHistorySnapshot,
+  historyTurns,
   getServerHistorySnapshot,
   subscribeHistory,
   updateHistory,
@@ -30,6 +34,7 @@ import type {
   PersonHit,
   ProcessStep,
   SearchMode,
+  Tone,
 } from '@/types';
 
 type ChatEvent =
@@ -58,6 +63,8 @@ export default function Page() {
   const [model, setModel] = useState<ModelId>(DEFAULT_MODEL);
   // モードは API まで渡して、返す中身を切り替える
   const [mode, setMode] = useState<SearchMode>('experience');
+  // 語り口。返す中身は変えず、話し方だけを切り替える
+  const [tone, setTone] = useState<Tone>('mentor');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [view, setView] = useState<SidebarView>('chat');
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
@@ -81,9 +88,27 @@ export default function Page() {
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }));
   }, []);
 
+  /** 完成したやり取りを、その相談の末尾に足す（同じ id があれば差し替える）。 */
+  const appendTurn = useCallback((historyId: string, finished: ChatTurn) => {
+    updateHistory((entries) =>
+      entries.map((entry) => {
+        if (entry.id !== historyId) return entry;
+        const kept = historyTurns(entry).filter((turn) => turn.id !== finished.id);
+        return { ...entry, turns: [...kept, finished], turn: undefined };
+      }),
+    );
+  }, []);
+
   const handleSubmit = useCallback(
-    async (query: string) => {
+    /**
+     * @param options.followUp 「次に聞くとしたら」から来た質問。
+     *   新しい相談を立てず、いま開いている相談の続きとして積む。
+     */
+    async (query: string, options?: { followUp?: boolean }) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // 続きなら履歴は増やさず、開いている相談に足していく
+      const continuing = Boolean(options?.followUp && activeHistoryId);
+      const historyId = continuing && activeHistoryId ? activeHistoryId : id;
       const startedAt = performance.now();
       // 実際に動いた処理だけを積む。ここに出ないものは走っていない
       const steps: ProcessStep[] = [];
@@ -110,15 +135,17 @@ export default function Page() {
       ]);
       step(
         '相談を受け取った',
-        `モード: ${mode === 'person' ? '人を探す' : '経験談を探す'} ／ モデル: ${model}`,
+        `モード: ${mode === 'person' ? '人を探す' : '経験談を探す'} ／ 語り口: ${TONE_OPTIONS.find((item) => item.value === tone)?.label ?? tone} ／ モデル: ${model}`,
       );
-      // 相談した時点で履歴を1件積む（件数と要約は結果が出たら埋める）
-      updateHistory((prev) => [
-        { id, query, mode, model, createdAt: new Date().toISOString(), count: 0 },
-        ...prev,
-      ]);
+      // 相談した時点で履歴を1件積む（件数と要約は結果が出たら埋める）。続きのときは積まない
+      if (!continuing) {
+        updateHistory((prev) => [
+          { id, query, mode, model, createdAt: new Date().toISOString(), count: 0 },
+          ...prev,
+        ]);
+        setActiveHistoryId(id);
+      }
       setView('chat');
-      setActiveHistoryId(id);
       setLoading(true);
       scrollToBottom();
 
@@ -189,7 +216,7 @@ export default function Page() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, model, mode }),
+          body: JSON.stringify({ query, model, mode, tone }),
         });
 
         if (!response.ok || !response.body) {
@@ -254,7 +281,12 @@ export default function Page() {
                 `${count}件`,
               );
               updateHistory((prev) =>
-                prev.map((entry) => (entry.id === id ? { ...entry, count, summary } : entry)),
+                prev.map((entry) =>
+                  entry.id === historyId
+                    ? // 見出し用の要約は最初の質問のものを残す
+                      { ...entry, count, summary: continuing ? entry.summary : summary }
+                    : entry,
+                ),
               );
             }
           }
@@ -280,10 +312,9 @@ export default function Page() {
           };
           setTurns((prev) => prev.map((turn) => (turn.id === id ? finished : turn)));
           // 副作用は更新関数の外で行う（更新関数はレンダー中に再実行されうるため）
-          updateHistory((entries) =>
-            entries.map((entry) => (entry.id === id ? { ...entry, turn: finished } : entry)),
-          );
-          void saveCard(finished);
+          appendTurn(historyId, finished);
+          // カードは相談ごとに1枚。続きのときは作り直さない
+          if (!continuing) void saveCard(finished);
           return;
         }
 
@@ -310,10 +341,9 @@ export default function Page() {
         setTurns((prev) => prev.map((turn) => (turn.id === id ? finished : turn)));
         // 履歴から開き直せるように、完成したターンを履歴に持たせる。
         // 副作用は更新関数の外で行う（更新関数はレンダー中に再実行されうるため）
-        updateHistory((entries) =>
-          entries.map((entry) => (entry.id === id ? { ...entry, turn: finished } : entry)),
-        );
-        void saveCard(finished);
+        appendTurn(historyId, finished);
+        // カードは相談ごとに1枚。続きのときは作り直さない
+        if (!continuing) void saveCard(finished);
       } catch (error) {
         const message = error instanceof Error ? error.message : '取得に失敗しました';
         steps.push({ label: '失敗した', detail: message, at: Math.round(performance.now() - startedAt) });
@@ -327,7 +357,7 @@ export default function Page() {
         scrollToBottom();
       }
     },
-    [mode, model, scrollToBottom],
+    [mode, model, tone, activeHistoryId, appendTurn, scrollToBottom],
   );
 
   const composer = (docked: boolean) => (
@@ -338,6 +368,8 @@ export default function Page() {
       onModelChange={setModel}
       mode={mode}
       onModeChange={setMode}
+      tone={tone}
+      onToneChange={setTone}
       docked={docked}
     />
   );
@@ -377,22 +409,28 @@ export default function Page() {
           if (!entry) return;
           setActiveHistoryId(id);
           setView('chat');
-          // やり取りが保存されていればそのまま開く。
+          // やり取りが保存されていれば、続きも含めて全部そのまま開く。
           // 無い場合（履歴を分ける前の古い記録）も、打った文面と再実行だけは出す
-          setTurns([
-            entry.turn ?? {
-              id: entry.id,
-              query: entry.query,
-              mode: entry.mode,
-              experiences: [],
-              people: [],
-              articles: [],
-              followups: [],
-              status: 'error',
-              error: 'この相談は、やり取りを保存するようになる前のものです。内容は残っていません。',
-              steps: [],
-            },
-          ]);
+          const saved = historyTurns(entry);
+          setTurns(
+            saved.length > 0
+              ? saved
+              : [
+                  {
+                    id: entry.id,
+                    query: entry.query,
+                    mode: entry.mode,
+                    experiences: [],
+                    people: [],
+                    articles: [],
+                    followups: [],
+                    status: 'error',
+                    error:
+                      'この相談は、やり取りを保存するようになる前のものです。内容は残っていません。',
+                    steps: [],
+                  },
+                ],
+          );
         }}
       />
 
@@ -427,19 +465,30 @@ export default function Page() {
             // dvh + interactiveWidget で、スマホのキーボードに合わせて中央がせり上がる
             style={{ minHeight: '100dvh' }}
           >
-            <h1 className="text-[22px] font-medium tracking-tight text-ink">Chat Bio</h1>
+            <div className="flex flex-col items-center">
+              <h1 className="text-[22px] font-medium tracking-tight text-ink">Brain</h1>
+              <BrainMark className="mt-4 h-20 w-auto text-accent" />
+            </div>
             {composer(false)}
           </main>
         ) : (
           // 始まったら入力欄は下に固定して、ログを上に伸ばす
           <main className="mx-auto w-full max-w-[600px] px-5 pt-16 pb-64 lg:pt-10">
             <header className="pb-10">
-              <h1 className="text-[17px] font-medium tracking-tight text-ink">Chat Bio</h1>
+              <h1 className="text-[17px] font-medium tracking-tight text-ink">Brain</h1>
             </header>
 
-            <ChatLog turns={turns} model={model} onRetry={handleSubmit} onAsk={handleSubmit} />
+            <ChatLog
+              turns={turns}
+              model={model}
+              onRetry={handleSubmit}
+              // 「次に聞くとしたら」は新しい相談を立てず、この相談の続きにする
+              onAsk={(q) => handleSubmit(q, { followUp: true })}
+            />
 
             <div ref={bottomRef} />
+
+            <ThreadOutline turns={turns} />
 
             {composer(true)}
           </main>

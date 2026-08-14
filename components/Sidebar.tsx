@@ -3,25 +3,26 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import ConfirmButton from './ConfirmButton';
 import MoreMenu from './MoreMenu';
-import { CardsIcon, ChatIcon, ComposeIcon } from './Icons';
+import { BubbleIcon, CardsIcon, PaperPlaneIcon } from './Icons';
 import { formatDate } from '@/lib/records';
-import {
-  getMessagesSnapshot,
-  getServerMessagesSnapshot,
-  subscribeMessages,
-} from '@/lib/messages';
 import {
   historyToText,
   renameHistory,
   toggleArchiveHistory,
   togglePinHistory,
 } from '@/lib/history';
+import {
+  getMessagesSnapshot,
+  getServerMessagesSnapshot,
+  subscribeMessages,
+} from '@/lib/messages';
 import type { HistoryEntry } from '@/types';
 
 export type SidebarView = 'chat' | 'cards' | 'dm';
 
 /**
- * 左サイドバー。上にナビ（新しい相談／マイカード）、下に履歴を素のリストで並べる。
+ * 左サイドバー。上に「新しいチャット」とナビ、その下は全部履歴。
+ * 履歴が主役なので区画で隠さず、常に見えるところに置く。
  * PC は常に表示、スマホは重ねて開閉する。
  */
 export default function Sidebar({
@@ -166,7 +167,7 @@ export default function Sidebar({
       </li>
     );
 
-  // サイドバー自体に色を敷いてあるので、選ばれているものは白く「浮かせて」出す
+  // 選ばれている区画は白く浮かせる（サイドバー自体に色が敷いてあるので白が手前になる）
   const navClass = (active: boolean) =>
     `flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
       active
@@ -194,7 +195,7 @@ export default function Sidebar({
       >
         <div className="flex items-center justify-between px-3 py-4">
           <span className="px-1 text-[13px] font-medium tracking-tight text-accent-strong">
-            Chat Bio
+            Brain
           </span>
           <button
             type="button"
@@ -206,18 +207,22 @@ export default function Sidebar({
           </button>
         </div>
 
-        <nav className="space-y-0.5 px-3 pb-4">
+        {/* 相談を始めるのは一覧を選ぶのとは別の操作なので、ボタンとして置く */}
+        <div className="px-3 pb-3">
           <button
             type="button"
             onClick={() => {
               onNewChat();
               onClose();
             }}
-            className={navClass(false)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent-strong px-3 py-2 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
           >
-            <ComposeIcon />
-            新しい相談
+            <BubbleIcon className="h-4 w-4" />
+            新しいチャット
           </button>
+        </div>
+
+        <nav className="space-y-0.5 px-3 pb-3">
           <button
             type="button"
             onClick={() => {
@@ -239,8 +244,8 @@ export default function Sidebar({
             aria-current={view === 'dm' ? 'page' : undefined}
             className={navClass(view === 'dm')}
           >
-            <ChatIcon />
-            チャット
+            <PaperPlaneIcon />
+            DMs
             {pending > 0 && (
               <span
                 title="承認待ち"
@@ -258,6 +263,7 @@ export default function Sidebar({
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
             {showArchived ? 'アーカイブ' : '履歴'}
           </p>
+
           {history.length === 0 ? (
             <p className="px-2.5 text-[12px] leading-relaxed text-muted">
               相談するとここに残ります。

@@ -6,21 +6,22 @@ export default function FollowUps({
   followups,
   onAsk,
 }: {
-  followups: string[];
+  /** 後から足した項目なので、古い記録には入っていないことがある */
+  followups?: string[];
   onAsk: (query: string) => void;
 }) {
-  if (followups.length === 0) return null;
+  if (!followups?.length) return null;
 
   return (
     <section className="pt-2">
       <p className="text-[11px] tracking-wide text-muted">次に聞くとしたら</p>
-      <ul className="mt-1 border-t border-line">
+      <ul className="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
         {followups.map((question) => (
           <li key={question}>
             <button
               type="button"
               onClick={() => onAsk(question)}
-              className="group flex w-full items-center gap-3 border-b border-line py-3 text-left"
+              className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-tint"
             >
               <span className="min-w-0 flex-1 text-[14px] leading-snug text-ink">{question}</span>
               <span

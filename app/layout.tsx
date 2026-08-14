@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chat Bio",
+  title: "Brain",
   description: "悩みを入力すると、同じ経験をした人の実体験が3件返ってくる。",
 };
 

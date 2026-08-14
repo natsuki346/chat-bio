@@ -1,5 +1,5 @@
 import { migrateLegacyRecords } from './migrate';
-import type { HistoryEntry } from '@/types';
+import type { ChatTurn, HistoryEntry } from '@/types';
 
 const STORAGE_KEY = 'chat-bio:history';
 
@@ -60,8 +60,8 @@ function persist(entries: HistoryEntry[]): HistoryEntry[] {
     const lightened = [...entries];
     for (let i = lightened.length - 1; i >= 0; i--) {
       const entry = lightened[i];
-      if (!entry?.turn) continue;
-      lightened[i] = { ...entry, turn: undefined };
+      if (!entry?.turn && !entry?.turns) continue;
+      lightened[i] = { ...entry, turn: undefined, turns: undefined };
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightened));
         return lightened;
@@ -88,6 +88,28 @@ function persist(entries: HistoryEntry[]): HistoryEntry[] {
 export function updateHistory(next: (prev: HistoryEntry[]) => HistoryEntry[]): void {
   snapshot = persist(next(getHistorySnapshot()));
   for (const listener of listeners) listener();
+}
+
+/**
+ * 保存済みのやり取りを、いまの形に揃える。
+ * 後から足したフィールド（followups など）は古い記録に無く、
+ * そのまま描画すると undefined を読んで落ちるので、ここで既定値を埋める。
+ */
+function normalize(turn: ChatTurn): ChatTurn {
+  return {
+    ...turn,
+    experiences: turn.experiences ?? [],
+    people: turn.people ?? [],
+    articles: turn.articles ?? [],
+    followups: turn.followups ?? [],
+    steps: turn.steps ?? [],
+  };
+}
+
+/** その相談のやり取りを順に取り出す。1往復だった頃の記録も混ぜて読めるようにする。 */
+export function historyTurns(entry: HistoryEntry): ChatTurn[] {
+  if (entry.turns?.length) return entry.turns.map(normalize);
+  return entry.turn ? [normalize(entry.turn)] : [];
 }
 
 /** 履歴の名前を付け直す。空にしたら元の文面に戻す。 */
@@ -121,14 +143,18 @@ export function historyToText(entry: HistoryEntry): string {
   if (entry.title) lines.push(entry.title, '');
   lines.push(`相談: ${entry.query}`);
 
-  const turn = entry.turn;
-  if (turn?.mode === 'person') {
-    for (const hit of turn.people) lines.push('', `「${hit.quote}」`);
-  } else if (turn) {
-    for (const item of turn.experiences) {
-      lines.push('', `【${item.title}】`, item.body, `→ ${item.point}`);
+  const turns = historyTurns(entry);
+  turns.forEach((turn, index) => {
+    // 2件目以降は、どの質問への話なのかが分かるように見出しを挟む
+    if (index > 0) lines.push('', `--- ${turn.query}`);
+    if (turn.mode === 'person') {
+      for (const hit of turn.people) lines.push('', `「${hit.quote}」`);
+    } else {
+      for (const item of turn.experiences) {
+        lines.push('', `【${item.title}】`, item.body, `→ ${item.point}`);
+      }
     }
-  }
+  });
   return lines.join('\n');
 }
 

@@ -5,6 +5,7 @@ import ArticleRefs from './ArticleRefs';
 import FollowUps from './FollowUps';
 import LoadingDots from './LoadingDots';
 import ProcessTrail from './ProcessTrail';
+import { turnAnchorId } from './ThreadOutline';
 import type { ChatTurn, ModelId } from '@/types';
 
 export default function ChatLog({
@@ -22,7 +23,9 @@ export default function ChatLog({
   return (
     <div className="space-y-10">
       {turns.map((turn) => (
-        <section key={turn.id} className="space-y-4">
+        // 右の一覧から飛べるように、質問ごとに目印を付ける。
+        // scroll-mt は上に固定されているヘッダーぶんの余白
+        <section key={turn.id} id={turnAnchorId(turn.id)} className="scroll-mt-6 space-y-4">
           <QueryBubble query={turn.query} />
 
           <ProcessTrail steps={turn.steps} />
@@ -50,7 +53,7 @@ export default function ChatLog({
             (turn.mode === 'person' ? (
               <>
                 <p className="text-[11px] tracking-wide text-muted">こう言っている人がいる</p>
-                <div className="border-t border-line">
+                <div className="space-y-3">
                   {turn.people.map((hit, index) => (
                     <PersonCard
                       key={`${turn.id}-${index}`}
@@ -66,7 +69,7 @@ export default function ChatLog({
             ) : (
               <>
                 <p className="text-[11px] tracking-wide text-muted">同じ経験をした人の話</p>
-                <div className="border-t border-line">
+                <div className="space-y-3">
                   {turn.experiences.map((experience, index) => (
                     <ExperienceCard
                       key={`${turn.id}-${index}`}

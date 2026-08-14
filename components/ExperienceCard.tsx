@@ -29,7 +29,7 @@ export default function ExperienceCard({
   const person = PEOPLE[experience.person ?? DEFAULT_PERSON] ?? PEOPLE[DEFAULT_PERSON];
 
   return (
-    <article className="border-b border-line bg-white py-5">
+    <article className="rounded-2xl border border-line bg-white px-4 py-4">
       {/* 投稿のヘッダー。左に誰の話か、右にマッチ度 */}
       <div className="flex items-center gap-2.5">
         <span

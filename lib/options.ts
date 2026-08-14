@@ -1,4 +1,10 @@
-import type { ModelId, SearchMode } from '@/types';
+import type { ModelId, SearchMode, Tone } from '@/types';
+
+export const TONE_OPTIONS: { value: Tone; label: string; hint: string }[] = [
+  { value: 'friend', label: '友達', hint: 'タメ口で、近い距離から' },
+  { value: 'mentor', label: 'メンター', hint: '先を歩いた人として、背中を押す' },
+  { value: 'expert', label: '専門家', hint: '落ち着いて、筋道立てて' },
+];
 
 /** 入力欄のメニュー用ラベル。クライアントで使うので SDK には依存させない。 */
 export const MODE_OPTIONS: { value: SearchMode; label: string; hint: string }[] = [

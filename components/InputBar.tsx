@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import ComposerMenu from './ComposerMenu';
-import { SendIcon } from './Icons';
+import { MicIcon, SendIcon, SparkIcon, StopIcon } from './Icons';
 import { useSpeechInput } from './useSpeechInput';
-import { MODEL_OPTIONS, MODE_OPTIONS } from '@/lib/options';
-import type { ModelId, SearchMode } from '@/types';
+import { autoGrow, useSubmitKey } from './useSubmitKey';
+import { MODEL_OPTIONS, MODE_OPTIONS, TONE_OPTIONS } from '@/lib/options';
+import type { ModelId, SearchMode, Tone } from '@/types';
 
 export default function InputBar({
   onSubmit,
@@ -14,6 +15,8 @@ export default function InputBar({
   onModelChange,
   mode,
   onModeChange,
+  tone,
+  onToneChange,
   docked = false,
 }: {
   onSubmit: (query: string) => void;
@@ -22,10 +25,13 @@ export default function InputBar({
   onModelChange: (model: ModelId) => void;
   mode: SearchMode;
   onModeChange: (mode: SearchMode) => void;
+  tone: Tone;
+  onToneChange: (tone: Tone) => void;
   /** 会話が始まったら下に固定する。最初は画面中央に置く。 */
   docked?: boolean;
 }) {
   const [value, setValue] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 話し始めた時点の入力内容。認識結果はこれに足していく
   const baseRef = useRef('');
@@ -33,6 +39,11 @@ export default function InputBar({
     setValue(baseRef.current ? `${baseRef.current} ${text}` : text);
   }, []);
   const speech = useSpeechInput({ onTranscript });
+
+  // 打っても喋っても、中身に合わせて高さを合わせ直す
+  useLayoutEffect(() => {
+    autoGrow(textareaRef.current);
+  }, [value]);
 
   const send = (query: string) => {
     const trimmed = query.trim();
@@ -42,6 +53,8 @@ export default function InputBar({
     setValue('');
     onSubmit(trimmed);
   };
+
+  const submitKey = useSubmitKey(() => send(value));
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -66,17 +79,21 @@ export default function InputBar({
             docked ? 'mb-3' : ''
           }`}
         >
-          <input
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="いま、なにに悩んでる？"
+            placeholder="いま、なにに悩んでる？（Shift+Enter で改行）"
             disabled={loading}
+            {...submitKey}
             /* 16px 固定：iOS の自動ズーム防止 */
             style={{ fontSize: '16px' }}
-            className="w-full bg-transparent px-2 pb-2 pt-1 text-ink placeholder:text-muted focus:outline-none disabled:opacity-50"
+            className="min-h-[76px] w-full resize-none overflow-y-auto bg-transparent px-2 pb-2 pt-2 leading-relaxed text-ink placeholder:text-muted focus:outline-none disabled:opacity-50"
           />
 
-          <div className="flex items-center gap-2">
+          {/* 狭い画面では音声・送信が次の行に折り返す（はみ出させない） */}
+          <div className="flex flex-wrap items-center gap-2">
             <ComposerMenu
               label="検索モード"
               options={MODE_OPTIONS}
@@ -95,41 +112,65 @@ export default function InputBar({
               value={model}
               onChange={onModelChange}
               disabled={loading}
+              leading={<SparkIcon className="h-3.5 w-3.5 text-accent-strong" />}
+              heading={
+                // どこのモデルを使っているのかが一目で分かるようにしておく
+                <span className="flex items-center gap-1.5">
+                  <SparkIcon className="h-3.5 w-3.5 shrink-0 text-accent-strong" />
+                  <span className="text-[12px] font-medium text-ink">Claude</span>
+                  <span className="text-[11px] text-muted">by Anthropic</span>
+                </span>
+              }
             />
 
-            <div className="flex-1" />
-
-            {speech.supported && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!speech.listening) baseRef.current = value.trim();
-                  speech.toggle();
-                }}
+            <div className="ml-auto flex items-center gap-2">
+              <ComposerMenu
+                label="語り口"
+                options={TONE_OPTIONS}
+                value={tone}
+                onChange={onToneChange}
                 disabled={loading}
-                aria-pressed={speech.listening}
-                aria-label={speech.listening ? '音声入力を止める' : '音声で入力する'}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-40 ${
-                  speech.listening
-                    ? 'animate-pulse border-accent-strong bg-accent-strong text-white'
-                    : 'border-line-strong bg-white text-ink hover:border-accent-strong'
-                }`}
-              >
-                <span aria-hidden className="text-[13px] leading-none">
-                  ●
-                </span>
-              </button>
-            )}
+              />
+              {speech.supported && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!speech.listening) baseRef.current = value.trim();
+                    speech.toggle();
+                  }}
+                  disabled={loading}
+                  aria-pressed={speech.listening}
+                  aria-label={speech.listening ? '音声入力を止める' : '音声で入力する'}
+                  title={
+                    speech.listening
+                      ? '押すと聞き取りを止めます'
+                      : '話した内容を文字にして入力します'
+                  }
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-40 ${
+                    speech.listening
+                      ? 'border-accent-strong bg-accent-strong text-white'
+                      : 'border-line-strong bg-white text-ink hover:border-accent-strong'
+                  }`}
+                >
+                  {speech.listening ? (
+                    <StopIcon className="h-4 w-4" />
+                  ) : (
+                    <MicIcon className="h-4 w-4" />
+                  )}
+                </button>
+              )}
 
-            <button
-              type="submit"
-              disabled={loading || !value.trim()}
-              aria-label="送る"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-white transition-opacity disabled:opacity-30"
-            >
-              <SendIcon className="h-4 w-4" />
-            </button>
+              <button
+                type="submit"
+                disabled={loading || !value.trim()}
+                aria-label="送る"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-white transition-opacity disabled:opacity-30"
+              >
+                <SendIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
+
           {speech.listening && (
             <p className="px-2 pt-1.5 text-[11px] text-muted">聞き取り中… もう一度押すと止まります</p>
           )}
