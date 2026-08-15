@@ -251,7 +251,7 @@ export default function DirectMessages() {
     send();
   };
 
-  // 一覧
+  // 一覧。他の画面と同じく Aurora が透けて見えるままにする（ここだけ塞がない）
   if (!openPerson || !person) {
     return (
       <div className="mx-auto w-full max-w-[600px] px-5 pt-16 pb-20 lg:pt-10">
@@ -272,7 +272,7 @@ export default function DirectMessages() {
   // スレッド：画面いっぱいを使う
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col" style={{ height: '100dvh' }}>
-      <header className="flex shrink-0 items-center gap-3 border-b border-line bg-white px-4 py-3">
+      <header className="flex shrink-0 items-center gap-3 px-4 py-3">
         <button
           type="button"
           onClick={() => setOpenPerson(null)}
@@ -290,8 +290,8 @@ export default function DirectMessages() {
         </span>
       </header>
 
-      {/* 会話の面は一段沈めて、吹き出しが浮いて見えるようにする */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-panel px-4 py-4">
+      {/* 面で沈めず、後ろの背景をそのまま通す。吹き出しだけが浮いて見える */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {thread.length === 0 ? (
           <p className="text-center text-[12px] text-muted">まだやり取りがありません。</p>
         ) : (
@@ -380,7 +380,7 @@ export default function DirectMessages() {
       </div>
 
       <div
-        className="shrink-0 border-t border-line bg-white px-4 py-3"
+        className="shrink-0 px-4 py-3"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         {locked ? (
