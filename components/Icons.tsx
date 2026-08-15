@@ -153,3 +153,31 @@ export function BackIcon({ className }: { className?: string }) {
     </Icon>
   );
 }
+
+/** サイドバーを開閉する（3本線） */
+export function MenuIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </Icon>
+  );
+}
+
+/** モデル・語り口・モードをまとめた設定ボタン（スライダー3本） */
+export function SlidersIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M4 6h10" />
+      <path d="M18 6h2" />
+      <circle cx="15" cy="6" r="2" fill="currentColor" stroke="none" />
+      <path d="M4 12h2" />
+      <path d="M10 12h10" />
+      <circle cx="7" cy="12" r="2" fill="currentColor" stroke="none" />
+      <path d="M4 18h10" />
+      <path d="M18 18h2" />
+      <circle cx="15" cy="18" r="2" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}

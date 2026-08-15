@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from 'react';
 import ComposerMenu from './ComposerMenu';
+import ComposerSettings from './ComposerSettings';
 import MoreMenu from './MoreMenu';
 import { FileIcon, MicIcon, PlusIcon, SendIcon, SparkIcon, StopIcon } from './Icons';
 import { useSpeechInput } from './useSpeechInput';
@@ -228,8 +229,8 @@ export default function InputBar({
             </ul>
           )}
 
-          {/* 狭い画面では音声・送信が次の行に折り返す（はみ出させない） */}
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+          {/* スマホでも崩れたりスクロールしたりしないよう、1行に収まる分だけ並べる */}
+          <div className="mt-1 flex items-center gap-2">
             <input
               ref={fileRef}
               type="file"
@@ -242,58 +243,74 @@ export default function InputBar({
               }}
               className="hidden"
             />
-            {/* 整理モードは対話だけで進める。添付は相談モードで使う */}
-            {appMode === 'consult' && (
-              <MoreMenu
-                label="添える"
-                align="left"
-                trigger={<PlusIcon className="h-4 w-4" />}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-ink transition-colors hover:border-accent-strong"
-                items={[
-                  { label: 'ファイルを添付', onSelect: () => fileRef.current?.click() },
-                  { label: 'カードから選択', onSelect: onPickCard },
-                ]}
-              />
-            )}
+            {/* 整理中でも資料を見せながら話したいことがあるので、モードに関わらず出す */}
+            <MoreMenu
+              label="添える"
+              align="left"
+              trigger={<PlusIcon className="h-4 w-4" />}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-ink transition-colors hover:border-accent-strong"
+              items={[
+                { label: 'ファイルを添付', onSelect: () => fileRef.current?.click() },
+                { label: 'カードから選択', onSelect: onPickCard },
+              ]}
+            />
 
             {/* 選ぶものは右にまとめる。何を選んでいるのかは小さく見出しで示す */}
-            <div className="ml-auto flex items-center gap-2">
-              {/* 見出しは段を作らず、値の左に添える（チャット系の入力欄の作り方に合わせる） */}
-              <ComposerMenu
-                label="モデル"
-                options={MODEL_OPTIONS}
-                value={model}
-                onChange={onModelChange}
-                disabled={loading}
-                leading={<span className="text-[10px] tracking-wide text-faint">モデル</span>}
-                heading={
-                  // どこのモデルを使っているのかが一目で分かるようにしておく
-                  <span className="flex items-center gap-1.5">
-                    <SparkIcon className="h-3.5 w-3.5 shrink-0 text-accent-strong" />
-                    <span className="text-[12px] font-medium text-ink">Claude</span>
-                    <span className="text-[11px] text-muted">by Anthropic</span>
-                  </span>
-                }
-              />
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {/*
+               * 3つのピルを並べるとスマホ幅では入りきらないので、
+               * 640px 以上だけ横並びのピルを出し、それ未満は1つのボタンにまとめる
+               */}
+              <div className="hidden items-center gap-2 sm:flex">
+                {/* 見出しは段を作らず、値の左に添える（チャット系の入力欄の作り方に合わせる） */}
+                <ComposerMenu
+                  label="モデル"
+                  options={MODEL_OPTIONS}
+                  value={model}
+                  onChange={onModelChange}
+                  disabled={loading}
+                  leading={<span className="text-[10px] tracking-wide text-faint">モデル</span>}
+                  heading={
+                    // どこのモデルを使っているのかが一目で分かるようにしておく
+                    <span className="flex items-center gap-1.5">
+                      <SparkIcon className="h-3.5 w-3.5 shrink-0 text-accent-strong" />
+                      <span className="text-[12px] font-medium text-ink">Claude</span>
+                      <span className="text-[11px] text-muted">by Anthropic</span>
+                    </span>
+                  }
+                />
 
-              <ComposerMenu
-                label="語り口"
-                options={TONE_OPTIONS}
-                value={tone}
-                onChange={onToneChange}
-                disabled={loading}
-                leading={<span className="text-[10px] tracking-wide text-faint">語り口</span>}
-              />
+                <ComposerMenu
+                  label="語り口"
+                  options={TONE_OPTIONS}
+                  value={tone}
+                  onChange={onToneChange}
+                  disabled={loading}
+                  leading={<span className="text-[10px] tracking-wide text-faint">語り口</span>}
+                />
 
-              {/* 整理／相談の切り替え。モデル・語り口と並びで置く */}
-              <ComposerMenu
-                label="モード"
-                options={APP_MODE_OPTIONS}
-                value={appMode}
-                onChange={onAppModeChange}
-                disabled={loading}
-                leading={<span className="text-[10px] tracking-wide text-faint">モード</span>}
-              />
+                {/* 整理／相談の切り替え。モデル・語り口と並びで置く */}
+                <ComposerMenu
+                  label="モード"
+                  options={APP_MODE_OPTIONS}
+                  value={appMode}
+                  onChange={onAppModeChange}
+                  disabled={loading}
+                  leading={<span className="text-[10px] tracking-wide text-faint">モード</span>}
+                />
+              </div>
+
+              <div className="sm:hidden">
+                <ComposerSettings
+                  model={model}
+                  onModelChange={onModelChange}
+                  tone={tone}
+                  onToneChange={onToneChange}
+                  appMode={appMode}
+                  onAppModeChange={onAppModeChange}
+                  disabled={loading}
+                />
+              </div>
 
               {speech.supported && (
                 <button

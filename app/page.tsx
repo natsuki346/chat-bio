@@ -9,9 +9,10 @@ import DirectMessages from '@/components/DirectMessages';
 import ThreadOutline from '@/components/ThreadOutline';
 import OrganizeView from '@/components/OrganizeView';
 import CardPicker from '@/components/CardPicker';
+import { MenuIcon } from '@/components/Icons';
 import { RecordsProvider } from '@/components/RecordsContext';
 import { TONE_OPTIONS } from '@/lib/options';
-import { MAX_FILES } from '@/lib/attachments';
+import { MAX_FILES, withAttachments } from '@/lib/attachments';
 import {
   deriveTitle,
   getRecordsSnapshot,
@@ -148,7 +149,7 @@ export default function Page() {
 
   /** 整理モードの1往復。ユーザーの発言を足し、エージェントの次の質問とカードの更新分を受け取る。 */
   const handleOrganizeSubmit = useCallback(
-    async (query: string) => {
+    async (query: string, atts?: Attachment[]) => {
       const trimmed = query.trim();
       if (!trimmed || organizeThinking) return;
 
@@ -167,11 +168,17 @@ export default function Page() {
       setOrganizeThinking(true);
       setOrganizeDraft(null);
 
+      // モデルに送る分だけ添付を後ろに足す。カードに残す発言・吹き出しはきれいな文面のままにする
+      const messagesForRequest =
+        atts && atts.length > 0
+          ? [...messages.slice(0, -1), { ...userMessage, text: withAttachments(trimmed, atts) }]
+          : messages;
+
       try {
         const response = await fetch('/api/organize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages, model }),
+          body: JSON.stringify({ messages: messagesForRequest, model }),
         });
 
         if (!response.ok || !response.body) {
@@ -498,7 +505,7 @@ export default function Page() {
   const composer = (docked: boolean) => (
     <InputBar
       onSubmit={(query, atts) =>
-        mode === 'organize' ? handleOrganizeSubmit(query) : handleSubmit(query, { attachments: atts })
+        mode === 'organize' ? handleOrganizeSubmit(query, atts) : handleSubmit(query, { attachments: atts })
       }
       loading={mode === 'organize' ? organizeThinking : loading}
       model={model}
@@ -580,9 +587,9 @@ export default function Page() {
         type="button"
         onClick={() => setSidebarOpen(true)}
         aria-label="サイドバーを開く"
-        className="fixed left-4 top-4 z-20 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12px] text-ink lg:hidden"
+        className="fixed left-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-white text-ink lg:hidden"
       >
-        メニュー
+        <MenuIcon className="h-5 w-5" />
       </button>
 
       {/* サイドバーぶんだけ右に寄せる（PC のみ） */}
