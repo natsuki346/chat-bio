@@ -149,6 +149,8 @@ export type DirectMessage = {
 export type ChatTurn = {
   id: string;
   query: string;
+  /** この相談に添えたもの。レポート作成時に query と合わせて渡すため、ターンにも残しておく */
+  attachments?: Attachment[];
   experiences: Experience[];
   articles: Article[];
   /** やり取りから先回りした「次に聞きたいこと」。押すとそのまま次の相談になる */
@@ -163,6 +165,41 @@ export type ModelId = 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-
 
 /** 語り口。返ってくる話の中身は変えず、話し方だけを変える。 */
 export type Tone = 'friend' | 'mentor' | 'expert';
+
+/** 画面のモード。整理＝AIと悩みを深める、相談＝経験者を探す。 */
+export type AppMode = 'organize' | 'consult';
+
+/** 整理モードのやり取り1件。 */
+export type OrganizeMessage = {
+  id: string;
+  role: 'user' | 'agent';
+  text: string;
+};
+
+/**
+ * 整理モードで育てる悩みカード。
+ * draft: 対話しながら書き換わる ／ approved: 本人が確定した ／ sent: 相手に送った
+ */
+export type IssueCard = {
+  id: string;
+  status: 'draft' | 'approved' | 'sent';
+  /** 一覧で見分けるための見出し */
+  title: string;
+  /** 概要 */
+  summary: string;
+  /** 背景。どういう経緯でそうなっているか */
+  background: string;
+  /** 具体的に困っていること */
+  problems: string[];
+  /** どんな話を聞きたいか */
+  wants: string[];
+  /** 経験者に相談できるだけの材料が揃ったか。エージェントの判断 */
+  ready: boolean;
+  /** 整理のやり取り。承認後も「どう整理されたか」の経緯として残す */
+  messages: OrganizeMessage[];
+  createdAt: string;
+  approvedAt?: string;
+};
 
 /** 相談に添えたファイル。中身を文字にして相談と一緒に渡す。 */
 export type Attachment = {

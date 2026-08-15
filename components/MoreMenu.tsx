@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 export type MoreMenuItem = {
@@ -24,10 +24,16 @@ export default function MoreMenu({
   items,
   label = 'その他の操作',
   className = '',
+  trigger,
+  align = 'right',
 }: {
   items: MoreMenuItem[];
   label?: string;
   className?: string;
+  /** ボタンの中身。省略すると「⋯」 */
+  trigger?: ReactNode;
+  /** メニューを左端で揃えるか右端で揃えるか */
+  align?: 'left' | 'right';
 }) {
   const [open, setOpen] = useState(false);
   const [armed, setArmed] = useState<number | null>(null);
@@ -87,7 +93,10 @@ export default function MoreMenu({
       setPos({
         top: below + height > window.innerHeight ? Math.max(8, rect.top - 4 - height) : below,
         // 右端を基準に置きつつ、画面からはみ出さないようにする
-        left: Math.max(8, Math.min(rect.right - WIDTH, window.innerWidth - WIDTH - 8)),
+        left:
+          align === 'left'
+            ? Math.max(8, Math.min(rect.left, window.innerWidth - WIDTH - 8))
+            : Math.max(8, Math.min(rect.right - WIDTH, window.innerWidth - WIDTH - 8)),
       });
     }
     setArmed(null);
@@ -106,11 +115,14 @@ export default function MoreMenu({
           event.stopPropagation();
           toggle();
         }}
-        className={`rounded px-1.5 py-1 text-[13px] leading-none text-muted transition-colors hover:bg-white hover:text-ink ${
-          open ? 'bg-white text-ink' : ''
-        } ${className}`}
+        className={
+          className ||
+          `rounded px-1.5 py-1 text-[13px] leading-none text-muted transition-colors hover:bg-white hover:text-ink ${
+            open ? 'bg-white text-ink' : ''
+          }`
+        }
       >
-        ⋯
+        {trigger ?? '⋯'}
       </button>
 
       {open &&

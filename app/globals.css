@@ -1,27 +1,52 @@
 @import "tailwindcss";
 
 /*
- * 相談する場所なので、強い黒ではなく落ち着いた青をベースにする。
- * #7ba3c9 が基準色。灰色も含めて全部この色相（およそ209度）に寄せて、
- * 文字や塗りに使う濃さは白との読みやすさ（AA）で決めている。
+ * Emotional Gradient ── 安心の色域
+ *
+ * 話してもいい場所だと感じてもらうための色。中心は Pale Blue-Green #b8dcd5。
+ * OPEN（空色）→ CALM（青緑）→ SAFE（ティール）→ TRUST（青）と、
+ * 安心の種類がゆっくり移り変わるように並べている。
+ *
+ * 背景に使う5色はどれも淡く、文字を乗せる強さは持たせない。
+ * 文字と操作は別に用意した濃い方（-strong）で作り、
+ * 「背景は静かに、UI は明確に」を色の段階で分けている。
  */
 :root {
-  --background: #f5f9fc;
-  /* 文字色。真っ黒だときついので、基準色を暗く倒したインクにする */
-  --foreground: #1b2e3f;
-  --muted: #566e82;
-  --faint: #93a7bb;
-  --line: #dce6ef;
-  --line-strong: #c4d4e4;
-  --tint: #edf3f9;
-  --dim: #cbd9e7;
-  /* サイドバーなど、白い本文より一段沈める面。tint よりもう一段濃い */
-  --panel: #e4edf6;
-  /* 基準色。白の上の小さい文字には薄すぎるので、面や飾りに使う */
-  --accent: #7ba3c9;
-  /* 押せるもの・効いている状態。白抜き文字で 4.9:1 あるので本文サイズでも読める */
-  --accent-strong: #43759f;
-  /* 削除だけは色相を外して赤のままにする */
+  /* ── 感情の4段階（背景のグラデーションに使う。文字には使わない） ── */
+  /* OPEN：開かれている・呼吸できる */
+  --open: #d9eef5;
+  /* CALM：ここにいていい。安心の中心 */
+  --calm: #b8dcd5;
+  /* SAFE：一歩踏み出しても大丈夫 */
+  --safe: #5bafa5;
+  /* TRUST：任せても大丈夫 */
+  --trust: #6b9bc4;
+  /* 自然体・回復。ごく薄く混ぜるだけの補助色 */
+  --sage: #a8beaa;
+
+  /* ── 面 ── */
+  --background: #f4faf9;
+  --tint: #eef7f5;
+  --panel: #e4f0ed;
+  --line: #dfeceb;
+  --line-strong: #c8ded9;
+  --dim: #cbe0db;
+
+  /* ── 文字（白の上で AA を満たす濃さ） ── */
+  /* 真っ黒は張り詰めるので、中心色を暗く倒したインク。12.3:1 */
+  --foreground: #1b3a38;
+  /* 5.2:1 */
+  --muted: #55736f;
+  /* いちばん弱い文字。日付やラベルにも使うので、白・tint・panel のどれに乗っても AA を満たす濃さ。4.7〜5.5:1 */
+  --faint: #536e6b;
+
+  /* ── 操作 ── */
+  /* 飾り・面に使う基準色。淡いので文字の下敷きにはしない */
+  --accent: #5bafa5;
+  /* 押せるもの。白抜き文字で 4.9:1 */
+  --accent-strong: #2e7d74;
+  /* 信頼側。落ち着いた案内や副次的な操作に。5.4:1 */
+  --trust-strong: #3d6e96;
   --danger: #b8453c;
 }
 
@@ -38,6 +63,9 @@
   --color-dim: var(--dim);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-trust: var(--trust);
+  --color-trust-strong: var(--trust-strong);
+  --color-sage: var(--sage);
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -53,6 +81,135 @@ body {
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
     sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * 波打つ背景。
+ *
+ * 塊ごとに「横の周期」と「縦の周期」を別々にしてある。周期が噛み合わないので
+ * 軌道が往復ではなく曲線になり、直線移動に見えない＝波として読まれる。
+ * 形も真円ではなく楕円にして、ゆっくり回している。楕円が回ると重なりの縁が
+ * うねるので、塊そのものは動いていなくても波打って見える。
+ *
+ * ぼかしフィルタは使わない。大面積の blur は毎フレーム描き直しになるため。
+ * 輪郭のない放射グラデーションを直接置き、動かすのは transform だけにしている。
+ */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--background);
+}
+
+/* 外側が横、内側が縦と回転。入れ子にすることで曲線の軌道を作る */
+.aurora .orb {
+  position: absolute;
+  will-change: transform;
+}
+
+.aurora .orb > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+/* OPEN：上を広く開ける。いちばん大きく、いちばんゆっくり */
+.aurora .open {
+  top: -34%;
+  left: -18%;
+  width: 96vw;
+  height: 72vw;
+  animation: sway-x 23s ease-in-out infinite alternate;
+}
+.aurora .open > i {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--open) 88%, transparent), transparent);
+  animation: sway-y 17s ease-in-out infinite alternate, turn 74s linear infinite;
+}
+
+/* CALM：中心。留まる色なので振幅は小さめ、そのぶん大きく取る */
+.aurora .calm {
+  top: -6%;
+  left: 12%;
+  width: 104vw;
+  height: 84vw;
+  animation: sway-x-far 29s ease-in-out infinite alternate;
+}
+.aurora .calm > i {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--calm) 68%, transparent), transparent);
+  animation: sway-y 21s ease-in-out infinite alternate, turn 96s linear infinite reverse;
+}
+
+/* SAFE：右下から差してくる。動きがいちばん出る色 */
+.aurora .safe {
+  bottom: -30%;
+  right: -16%;
+  width: 88vw;
+  height: 64vw;
+  animation: sway-x-far 19s ease-in-out infinite alternate;
+}
+.aurora .safe > i {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--safe) 34%, transparent), transparent);
+  animation: sway-y-far 27s ease-in-out infinite alternate, turn 62s linear infinite;
+}
+
+/* TRUST：下に沈む土台。ゆっくり大きく寄せ引きする */
+.aurora .trust {
+  bottom: -38%;
+  left: -12%;
+  width: 92vw;
+  height: 68vw;
+  animation: sway-x 31s ease-in-out infinite alternate;
+}
+.aurora .trust > i {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--trust) 28%, transparent), transparent);
+  animation: sway-y 24s ease-in-out infinite alternate, turn 88s linear infinite;
+}
+
+/* SAGE：ほとんど見えない。人の気配をひと匙だけ */
+.aurora .sage {
+  top: 28%;
+  right: -4%;
+  width: 62vw;
+  height: 50vw;
+  animation: sway-x 26s ease-in-out infinite alternate-reverse;
+}
+.aurora .sage > i {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--sage) 22%, transparent), transparent);
+  animation: sway-y-far 33s ease-in-out infinite alternate, turn 110s linear infinite reverse;
+}
+
+@keyframes sway-x {
+  from { transform: translate3d(-5%, 0, 0); }
+  to   { transform: translate3d(9%, 0, 0); }
+}
+@keyframes sway-x-far {
+  from { transform: translate3d(-12%, 0, 0); }
+  to   { transform: translate3d(10%, 0, 0); }
+}
+@keyframes sway-y {
+  from { transform: translate3d(0, -6%, 0) scale(1); }
+  to   { transform: translate3d(0, 8%, 0) scale(1.1); }
+}
+@keyframes sway-y-far {
+  from { transform: translate3d(0, 10%, 0) scale(1.06); }
+  to   { transform: translate3d(0, -9%, 0) scale(0.96); }
+}
+/* 楕円をゆっくり回す。これが「うねり」を作っている */
+@keyframes turn {
+  from { rotate: 0deg; }
+  to   { rotate: 360deg; }
+}
+
+/* 動きを減らす設定なら、色は残して波だけ止める */
+@media (prefers-reduced-motion: reduce) {
+  .aurora .orb,
+  .aurora .orb > i {
+    animation: none !important;
+  }
 }
 
 @keyframes chatbio-blink {

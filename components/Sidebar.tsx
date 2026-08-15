@@ -189,7 +189,7 @@ export default function Sidebar({
 
       <aside
         aria-label="サイドバー"
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-line-strong bg-panel transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-line-strong bg-panel/80 backdrop-blur-xl transition-transform lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -259,7 +259,7 @@ export default function Sidebar({
         </nav>
 
         {/* 履歴だけ一段明るくして、上のナビと面を分ける */}
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line-strong bg-tint px-3 pb-4 pt-3">
+        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line-strong bg-tint/70 px-3 pb-4 pt-3">
           <p className="flex items-center gap-1.5 px-2.5 pb-1.5 text-[11px] font-medium tracking-wide text-accent-strong">
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
             {showArchived ? 'アーカイブ' : '履歴'}

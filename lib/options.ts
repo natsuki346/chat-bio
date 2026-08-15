@@ -1,4 +1,9 @@
-import type { ModelId, Tone } from '@/types';
+import type { AppMode, ModelId, Tone } from '@/types';
+
+export const APP_MODE_OPTIONS: { value: AppMode; label: string; hint: string }[] = [
+  { value: 'organize', label: '整理', hint: 'AIと対話しながら悩みをカードにする' },
+  { value: 'consult', label: '相談', hint: '経験者を探して繋がる' },
+];
 
 export const TONE_OPTIONS: { value: Tone; label: string; hint: string }[] = [
   { value: 'friend', label: '友達', hint: 'タメ口で、近い距離から' },

@@ -5,6 +5,7 @@ import FollowUps from './FollowUps';
 import LoadingDots from './LoadingDots';
 import ProcessTrail from './ProcessTrail';
 import { turnAnchorId } from './ThreadOutline';
+import { withAttachments } from '@/lib/attachments';
 import type { ChatTurn, ModelId } from '@/types';
 
 export default function ChatLog({
@@ -57,7 +58,9 @@ export default function ChatLog({
                     key={`${turn.id}-${index}`}
                     experience={experience}
                     streaming={turn.status === 'streaming'}
-                    query={turn.query}
+                    // 添えたカードの中身も含めて渡す。レポート作成（チャットする／繋がる）が
+                    // 打った一言だけで悩みを判断してしまわないように
+                    query={withAttachments(turn.query, turn.attachments ?? [])}
                     model={model}
                     reactionKey={`${turn.id}:${index}`}
                   />

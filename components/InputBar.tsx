@@ -9,15 +9,19 @@ import {
   type FormEvent,
 } from 'react';
 import ComposerMenu from './ComposerMenu';
+import MoreMenu from './MoreMenu';
 import { FileIcon, MicIcon, PlusIcon, SendIcon, SparkIcon, StopIcon } from './Icons';
 import { useSpeechInput } from './useSpeechInput';
 import { autoGrow, useSubmitKey } from './useSubmitKey';
-import { MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
+import { APP_MODE_OPTIONS, MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
 import { ACCEPT, MAX_FILES, readAttachments } from '@/lib/attachments';
-import type { Attachment, ModelId, Tone } from '@/types';
+import type { AppMode, Attachment, ModelId, Tone } from '@/types';
 
-/** 入力欄の最初に置く、変わらない誘い文句 */
-const PROMPT = 'Brainに頼んでみましょう';
+/** 入力欄の最初に置く、変わらない誘い文句。モードによって聞き方を変える */
+const PROMPT_BY_MODE: Record<AppMode, string> = {
+  organize: '今の状況を話してみましょう',
+  consult: 'Brainに頼んでみましょう',
+};
 
 /**
  * 誘い文句のうしろに流す「例えばこんな悩み」。
@@ -46,6 +50,11 @@ export default function InputBar({
   onModelChange,
   tone,
   onToneChange,
+  appMode,
+  onAppModeChange,
+  attachments,
+  onAttachmentsChange,
+  onPickCard,
   docked = false,
 }: {
   onSubmit: (query: string, attachments: Attachment[]) => void;
@@ -54,11 +63,17 @@ export default function InputBar({
   onModelChange: (model: ModelId) => void;
   tone: Tone;
   onToneChange: (tone: Tone) => void;
+  appMode: AppMode;
+  onAppModeChange: (mode: AppMode) => void;
+  /** 添付は親が持つ。整理したカードを外から足せるようにするため */
+  attachments: Attachment[];
+  onAttachmentsChange: (attachments: Attachment[]) => void;
+  /** 「カードから選択」を押したとき */
+  onPickCard: () => void;
   /** 会話が始まったら下に固定する。最初は画面中央に置く。 */
   docked?: boolean;
 }) {
   const [value, setValue] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [example, setExample] = useState('');
   const [skipped, setSkipped] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -134,7 +149,7 @@ export default function InputBar({
     if (!files?.length) return;
     const room = MAX_FILES - attachments.length;
     const result = await readAttachments([...files].slice(0, Math.max(room, 0)));
-    setAttachments((prev) => [...prev, ...result.attachments].slice(0, MAX_FILES));
+    onAttachmentsChange([...attachments, ...result.attachments].slice(0, MAX_FILES));
     setSkipped(result.skipped);
   };
 
@@ -145,7 +160,7 @@ export default function InputBar({
     baseRef.current = '';
     setValue('');
     onSubmit(trimmed, attachments);
-    setAttachments([]);
+    onAttachmentsChange([]);
     setSkipped([]);
   };
 
@@ -155,6 +170,8 @@ export default function InputBar({
     event.preventDefault();
     send(value);
   };
+
+  const prompt = PROMPT_BY_MODE[appMode];
 
   return (
     <div
@@ -179,7 +196,7 @@ export default function InputBar({
             rows={1}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder={example ? `${PROMPT}　${example}` : PROMPT}
+            placeholder={example ? `${prompt}　${example}` : prompt}
             disabled={loading}
             {...submitKey}
             /* 16px 固定：iOS の自動ズーム防止 */
@@ -199,7 +216,7 @@ export default function InputBar({
                   <button
                     type="button"
                     onClick={() =>
-                      setAttachments((prev) => prev.filter((file) => file.name !== item.name))
+                      onAttachmentsChange(attachments.filter((file) => file.name !== item.name))
                     }
                     aria-label={`${item.name} を外す`}
                     className="rounded px-1 leading-none text-muted transition-colors hover:text-ink"
@@ -225,16 +242,19 @@ export default function InputBar({
               }}
               className="hidden"
             />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={loading || attachments.length >= MAX_FILES}
-              aria-label="ファイルを添付する"
-              title={`ファイルを添付する（テキストとして読めるもの・${MAX_FILES}件まで）`}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-ink transition-colors hover:border-accent-strong disabled:opacity-40"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
+            {/* 整理モードは対話だけで進める。添付は相談モードで使う */}
+            {appMode === 'consult' && (
+              <MoreMenu
+                label="添える"
+                align="left"
+                trigger={<PlusIcon className="h-4 w-4" />}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-ink transition-colors hover:border-accent-strong"
+                items={[
+                  { label: 'ファイルを添付', onSelect: () => fileRef.current?.click() },
+                  { label: 'カードから選択', onSelect: onPickCard },
+                ]}
+              />
+            )}
 
             {/* 選ぶものは右にまとめる。何を選んでいるのかは小さく見出しで示す */}
             <div className="ml-auto flex items-center gap-2">
@@ -257,10 +277,20 @@ export default function InputBar({
               />
 
               <ComposerMenu
-                label="モード"
+                label="語り口"
                 options={TONE_OPTIONS}
                 value={tone}
                 onChange={onToneChange}
+                disabled={loading}
+                leading={<span className="text-[10px] tracking-wide text-faint">語り口</span>}
+              />
+
+              {/* 整理／相談の切り替え。モデル・語り口と並びで置く */}
+              <ComposerMenu
+                label="モード"
+                options={APP_MODE_OPTIONS}
+                value={appMode}
+                onChange={onAppModeChange}
                 disabled={loading}
                 leading={<span className="text-[10px] tracking-wide text-faint">モード</span>}
               />

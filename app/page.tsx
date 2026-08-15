@@ -7,8 +7,11 @@ import Sidebar, { type SidebarView } from '@/components/Sidebar';
 import MyCards from '@/components/MyCards';
 import DirectMessages from '@/components/DirectMessages';
 import ThreadOutline from '@/components/ThreadOutline';
+import OrganizeView from '@/components/OrganizeView';
+import CardPicker from '@/components/CardPicker';
 import { RecordsProvider } from '@/components/RecordsContext';
 import { TONE_OPTIONS } from '@/lib/options';
+import { MAX_FILES } from '@/lib/attachments';
 import {
   deriveTitle,
   getRecordsSnapshot,
@@ -25,15 +28,37 @@ import {
   subscribeHistory,
   updateHistory,
 } from '@/lib/history';
+import {
+  approveIssue,
+  createIssue,
+  getIssuesSnapshot,
+  getServerIssuesSnapshot,
+  issueToMarkdown,
+  saveIssue,
+  subscribeIssues,
+} from '@/lib/issues';
 import type {
+  AppMode,
   Article,
   Attachment,
   ChatTurn,
   Experience,
+  IssueCard,
   ModelId,
+  OrganizeMessage,
   ProcessStep,
   Tone,
 } from '@/types';
+
+type OrganizeReply = {
+  reply: string;
+  title: string;
+  summary: string;
+  background: string;
+  problems: string[];
+  wants: string[];
+  ready: boolean;
+};
 
 type ChatEvent =
   | { type: 'update' | 'done'; experiences: Experience[] }
@@ -64,10 +89,20 @@ export default function Page() {
   const [view, setView] = useState<SidebarView>('chat');
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  // 整理＝AIと悩みを深める、相談＝経験者を探す。まずは整理から始める
+  const [mode, setMode] = useState<AppMode>('organize');
+  const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
+  const [organizeThinking, setOrganizeThinking] = useState(false);
+  const [organizeError, setOrganizeError] = useState<string | null>(null);
+  // 返答が流れている最中の中身。確定するまで lib/issues には書かない
+  const [organizeDraft, setOrganizeDraft] = useState<OrganizeReply | null>(null);
+  // 相談に添えるもの。InputBar は見た目だけを持ち、中身はここで管理する
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [cardPickerOpen, setCardPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // localStorage（React の外）にあるので外部ストアとして購読する。
-  // 履歴は自動で溜まるログ、マイカードは自分で作るものなので別々に持つ
+  // 履歴は自動で溜まるログ、マイカードは自分で作るもの、悩みカードは整理モードで育てるものなので別々に持つ
   const records = useSyncExternalStore(
     subscribeRecords,
     getRecordsSnapshot,
@@ -78,6 +113,23 @@ export default function Page() {
     getHistorySnapshot,
     getServerHistorySnapshot,
   );
+  const issues = useSyncExternalStore(subscribeIssues, getIssuesSnapshot, getServerIssuesSnapshot);
+  const activeIssue = issues.find((item) => item.id === activeIssueId) ?? null;
+  /** 表示用。返答が流れている間は、保存済みのカードに流れてきた分だけ重ねて見せる。 */
+  const displayIssue: IssueCard | null =
+    activeIssue && organizeThinking && organizeDraft
+      ? {
+          ...activeIssue,
+          title: organizeDraft.title || activeIssue.title,
+          summary: organizeDraft.summary || activeIssue.summary,
+          background: organizeDraft.background || activeIssue.background,
+          problems: organizeDraft.problems.length > 0 ? organizeDraft.problems : activeIssue.problems,
+          wants: organizeDraft.wants.length > 0 ? organizeDraft.wants : activeIssue.wants,
+          messages: organizeDraft.reply
+            ? [...activeIssue.messages, { id: 'streaming', role: 'agent', text: organizeDraft.reply }]
+            : activeIssue.messages,
+        }
+      : activeIssue;
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }));
@@ -92,6 +144,131 @@ export default function Page() {
         return { ...entry, turns: [...kept, finished], turn: undefined };
       }),
     );
+  }, []);
+
+  /** 整理モードの1往復。ユーザーの発言を足し、エージェントの次の質問とカードの更新分を受け取る。 */
+  const handleOrganizeSubmit = useCallback(
+    async (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed || organizeThinking) return;
+
+      const card = activeIssue ?? createIssue();
+      if (!activeIssue) setActiveIssueId(card.id);
+
+      const userMessage: OrganizeMessage = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: 'user',
+        text: trimmed,
+      };
+      const messages = [...card.messages, userMessage];
+      // 先に自分の発言だけ反映しておく（返答待ちの間もやり取りは見える）
+      saveIssue({ ...card, messages });
+      setOrganizeError(null);
+      setOrganizeThinking(true);
+      setOrganizeDraft(null);
+
+      try {
+        const response = await fetch('/api/organize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, model }),
+        });
+
+        if (!response.ok || !response.body) {
+          const data = await response.json().catch(() => null);
+          throw new Error((data as { error?: string } | null)?.error ?? '取得に失敗しました');
+        }
+
+        // /api/chat と同じ SSE。届いた分だけ organizeDraft に反映し、質問文と カードを一緒に流す
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let streamError: string | null = null;
+        let latest: OrganizeReply | null = null;
+
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() ?? '';
+
+          for (const event of events) {
+            const line = event.split('\n').find((item) => item.startsWith('data:'));
+            if (!line) continue;
+
+            const payload = JSON.parse(line.slice(5).trim()) as
+              | ({ type: 'update' | 'done' } & OrganizeReply)
+              | { type: 'error'; error: string };
+
+            if (payload.type === 'error') {
+              streamError = payload.error;
+              continue;
+            }
+
+            const reply: OrganizeReply = {
+              reply: payload.reply,
+              title: payload.title,
+              summary: payload.summary,
+              background: payload.background,
+              problems: payload.problems,
+              wants: payload.wants,
+              ready: payload.ready,
+            };
+            latest = reply;
+            setOrganizeDraft(reply);
+          }
+        }
+
+        if (streamError) throw new Error(streamError);
+        if (!latest) throw new Error('取得に失敗しました');
+
+        const agentMessage: OrganizeMessage = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-a`,
+          role: 'agent',
+          text: latest.reply,
+        };
+        saveIssue({
+          ...card,
+          messages: [...messages, agentMessage],
+          title: latest.title || card.title,
+          summary: latest.summary || card.summary,
+          background: latest.background || card.background,
+          problems: latest.problems.length > 0 ? latest.problems : card.problems,
+          wants: latest.wants.length > 0 ? latest.wants : card.wants,
+          ready: latest.ready,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '取得に失敗しました';
+        setOrganizeError(message);
+      } finally {
+        setOrganizeThinking(false);
+        setOrganizeDraft(null);
+      }
+    },
+    [activeIssue, organizeThinking, model],
+  );
+
+  const handleApproveIssue = useCallback(() => {
+    if (activeIssueId) approveIssue(activeIssueId);
+  }, [activeIssueId]);
+
+  /** 承認したカードを持って相談モードへ。カードは添付として渡す（本文は打ち直さない）。 */
+  const handleConsultFromIssue = useCallback(() => {
+    if (!activeIssue) return;
+    setAttachments([
+      { name: `${activeIssue.title || '悩みカード'}.md`, text: issueToMarkdown(activeIssue) },
+    ]);
+    setTurns([]);
+    setActiveHistoryId(null);
+    setMode('consult');
+    setView('chat');
+  }, [activeIssue]);
+
+  /** 「カードから選択」で選ばれたカードを添付に足す */
+  const handlePickCard = useCallback((attachment: Attachment) => {
+    setAttachments((prev) => [...prev, attachment].slice(0, MAX_FILES));
   }, []);
 
   const handleSubmit = useCallback(
@@ -120,6 +297,7 @@ export default function Page() {
         {
           id,
           query,
+          attachments: options?.attachments ?? [],
           experiences: [],
           articles: [],
           followups: [],
@@ -288,6 +466,7 @@ export default function Page() {
         const finished: ChatTurn = {
           id,
           query,
+          attachments: options?.attachments ?? [],
           experiences: latestExperiences,
           articles: articles.articles,
           followups,
@@ -318,12 +497,19 @@ export default function Page() {
 
   const composer = (docked: boolean) => (
     <InputBar
-      onSubmit={(query, attachments) => handleSubmit(query, { attachments })}
-      loading={loading}
+      onSubmit={(query, atts) =>
+        mode === 'organize' ? handleOrganizeSubmit(query) : handleSubmit(query, { attachments: atts })
+      }
+      loading={mode === 'organize' ? organizeThinking : loading}
       model={model}
       onModelChange={setModel}
       tone={tone}
       onToneChange={setTone}
+      appMode={mode}
+      onAppModeChange={setMode}
+      attachments={attachments}
+      onAttachmentsChange={setAttachments}
+      onPickCard={() => setCardPickerOpen(true)}
       docked={docked}
     />
   );
@@ -341,6 +527,9 @@ export default function Page() {
           setTurns([]);
           setSelectedRecord(null);
           setActiveHistoryId(null);
+          setActiveIssueId(null);
+          setOrganizeError(null);
+          setAttachments([]);
           setView('chat');
         }}
         history={history}
@@ -410,6 +599,40 @@ export default function Page() {
               model={model}
             />
           </main>
+        ) : mode === 'organize' ? (
+          activeIssue && activeIssue.messages.length > 0 ? (
+            // やり取りが始まっていれば、対話とカードを積んで下に入力欄を固定する
+            <main className="mx-auto w-full max-w-[600px] px-5 pt-16 pb-64 lg:pt-10">
+              <header className="pb-10">
+                <h1 className="text-[17px] font-medium tracking-tight text-ink">Brain</h1>
+              </header>
+
+              <OrganizeView
+                card={displayIssue}
+                thinking={organizeThinking}
+                error={organizeError}
+                onApprove={handleApproveIssue}
+                onConsult={handleConsultFromIssue}
+              />
+
+              <div ref={bottomRef} />
+
+              {composer(true)}
+            </main>
+          ) : (
+            // まだ何も話していないうちは、切り替えタブと入力欄を画面中央に置く
+            <main
+              className="mx-auto flex w-full max-w-[720px] flex-col px-5 pb-10 pt-16 lg:pt-10"
+              style={{ minHeight: '100dvh' }}
+            >
+              <div className="flex flex-1 flex-col justify-center gap-5">
+                <h1 className="text-center text-[20px] font-medium leading-snug tracking-tight text-ink">
+                  今どんなことがありましたか
+                </h1>
+                {composer(false)}
+              </div>
+            </main>
+          )
         ) : turns.length === 0 ? (
           // 会話が始まる前は、名前を左上に置いて入力欄を画面中央に置く
           <main
@@ -447,6 +670,12 @@ export default function Page() {
           </main>
         )}
       </div>
+
+      <CardPicker
+        open={cardPickerOpen}
+        onClose={() => setCardPickerOpen(false)}
+        onPick={handlePickCard}
+      />
     </RecordsProvider>
   );
 }
