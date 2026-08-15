@@ -17,8 +17,7 @@ export type ReactionTarget = {
   key: string;
   /** そのとき相談していた内容 */
   query: string;
-  mode: SearchMode;
-  /** 反応した中身。経験談なら見出し、人を探すなら一言 */
+  /** 反応した中身＝経験の見出し */
   about: string;
   /** 経験談のときの要点 */
   point?: string;
@@ -42,7 +41,6 @@ export type HistoryEntry = {
   pinned?: boolean;
   /** 一覧から外して別枠に寄せる。消したわけではない */
   archived?: boolean;
-  mode: SearchMode;
   /** 旧データには無いので任意 */
   model?: ModelId;
   createdAt: string;
@@ -68,7 +66,6 @@ export type ChatRecord = {
   /** お題。相談内容から作る短い見出し */
   title: string;
   query: string;
-  mode: SearchMode;
   createdAt: string;
   /** 返ってきた件数 */
   count: number;
@@ -81,12 +78,6 @@ export type ChatRecord = {
   historyId?: string;
   /** 解決済みにしたときに、何を見てどう解決したかをまとめたもの */
   resolution?: string;
-};
-
-/** 「人を探す」モードの1件。経験談は出さず、一言とアカウントだけ見せる。 */
-export type PersonHit = {
-  quote: string;
-  person?: string;
 };
 
 export type Article = {
@@ -158,10 +149,7 @@ export type DirectMessage = {
 export type ChatTurn = {
   id: string;
   query: string;
-  /** 送信時に選ばれていた検索モード。表示の出し分けに使う。 */
-  mode: SearchMode;
   experiences: Experience[];
-  people: PersonHit[];
   articles: Article[];
   /** やり取りから先回りした「次に聞きたいこと」。押すとそのまま次の相談になる */
   followups: string[];
@@ -173,8 +161,11 @@ export type ChatTurn = {
 
 export type ModelId = 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5';
 
-/** 検索モード。いまは両モードとも同じ API を叩き、見た目だけが切り替わる。 */
-export type SearchMode = 'experience' | 'person';
-
 /** 語り口。返ってくる話の中身は変えず、話し方だけを変える。 */
 export type Tone = 'friend' | 'mentor' | 'expert';
+
+/** 相談に添えたファイル。中身を文字にして相談と一緒に渡す。 */
+export type Attachment = {
+  name: string;
+  text: string;
+};

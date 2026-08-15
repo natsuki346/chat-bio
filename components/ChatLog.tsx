@@ -1,6 +1,5 @@
 import QueryBubble from './QueryBubble';
 import ExperienceCard from './ExperienceCard';
-import PersonCard from './PersonCard';
 import ArticleRefs from './ArticleRefs';
 import FollowUps from './FollowUps';
 import LoadingDots from './LoadingDots';
@@ -49,41 +48,24 @@ export default function ChatLog({
             </div>
           )}
 
-          {(turn.status === 'streaming' || turn.status === 'done') &&
-            (turn.mode === 'person' ? (
-              <>
-                <p className="text-[11px] tracking-wide text-muted">こう言っている人がいる</p>
-                <div className="space-y-3">
-                  {turn.people.map((hit, index) => (
-                    <PersonCard
-                      key={`${turn.id}-${index}`}
-                      hit={hit}
-                      streaming={turn.status === 'streaming'}
-                      query={turn.query}
-                      model={model}
-                      reactionKey={`${turn.id}:${index}`}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-[11px] tracking-wide text-muted">同じ経験をした人の話</p>
-                <div className="space-y-3">
-                  {turn.experiences.map((experience, index) => (
-                    <ExperienceCard
-                      key={`${turn.id}-${index}`}
-                      experience={experience}
-                      streaming={turn.status === 'streaming'}
-                      query={turn.query}
-                      model={model}
-                      reactionKey={`${turn.id}:${index}`}
-                    />
-                  ))}
-                </div>
-                {turn.status === 'done' && <ArticleRefs articles={turn.articles} />}
-              </>
-            ))}
+          {(turn.status === 'streaming' || turn.status === 'done') && (
+            <>
+              <p className="text-[11px] tracking-wide text-muted">同じ経験をした人の話</p>
+              <div className="space-y-3">
+                {turn.experiences.map((experience, index) => (
+                  <ExperienceCard
+                    key={`${turn.id}-${index}`}
+                    experience={experience}
+                    streaming={turn.status === 'streaming'}
+                    query={turn.query}
+                    model={model}
+                    reactionKey={`${turn.id}:${index}`}
+                  />
+                ))}
+              </div>
+              {turn.status === 'done' && <ArticleRefs articles={turn.articles} />}
+            </>
+          )}
 
           {turn.status === 'done' && onAsk && (
             <FollowUps followups={turn.followups} onAsk={onAsk} />

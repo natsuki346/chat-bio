@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import ConfirmButton from './ConfirmButton';
 import MoreMenu from './MoreMenu';
-import { BubbleIcon, CardsIcon, PaperPlaneIcon } from './Icons';
+import { BrainMark, BubbleIcon, CardsIcon, PaperPlaneIcon } from './Icons';
 import { formatDate } from '@/lib/records';
 import {
   historyToText,
@@ -194,8 +194,9 @@ export default function Sidebar({
         }`}
       >
         <div className="flex items-center justify-between px-3 py-4">
-          <span className="px-1 text-[13px] font-medium tracking-tight text-accent-strong">
-            Brain
+          <span className="flex items-center gap-1.5 px-1">
+            <BrainMark className="h-6 w-auto text-accent" />
+            <span className="text-[13px] font-medium tracking-tight text-accent-strong">Brain</span>
           </span>
           <button
             type="button"

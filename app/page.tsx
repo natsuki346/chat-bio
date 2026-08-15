@@ -8,7 +8,6 @@ import MyCards from '@/components/MyCards';
 import DirectMessages from '@/components/DirectMessages';
 import ThreadOutline from '@/components/ThreadOutline';
 import { RecordsProvider } from '@/components/RecordsContext';
-import { BrainMark } from '@/components/Icons';
 import { TONE_OPTIONS } from '@/lib/options';
 import {
   deriveTitle,
@@ -28,18 +27,16 @@ import {
 } from '@/lib/history';
 import type {
   Article,
+  Attachment,
   ChatTurn,
   Experience,
   ModelId,
-  PersonHit,
   ProcessStep,
-  SearchMode,
   Tone,
 } from '@/types';
 
 type ChatEvent =
-  | { type: 'update' | 'done'; mode: 'experience'; experiences: Experience[] }
-  | { type: 'update' | 'done'; mode: 'person'; people: PersonHit[] }
+  | { type: 'update' | 'done'; experiences: Experience[] }
   | { type: 'error'; error: string };
 
 const DEFAULT_MODEL: ModelId = 'claude-sonnet-4-6';
@@ -61,8 +58,6 @@ export default function Page() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState<ModelId>(DEFAULT_MODEL);
-  // モードは API まで渡して、返す中身を切り替える
-  const [mode, setMode] = useState<SearchMode>('experience');
   // 語り口。返す中身は変えず、話し方だけを切り替える
   const [tone, setTone] = useState<Tone>('mentor');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -103,8 +98,9 @@ export default function Page() {
     /**
      * @param options.followUp 「次に聞くとしたら」から来た質問。
      *   新しい相談を立てず、いま開いている相談の続きとして積む。
+     * @param options.attachments 相談に添えたファイル。中身は相談の後ろに足して渡す。
      */
-    async (query: string, options?: { followUp?: boolean }) => {
+    async (query: string, options?: { followUp?: boolean; attachments?: Attachment[] }) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       // 続きなら履歴は増やさず、開いている相談に足していく
       const continuing = Boolean(options?.followUp && activeHistoryId);
@@ -124,9 +120,7 @@ export default function Page() {
         {
           id,
           query,
-          mode,
           experiences: [],
-          people: [],
           articles: [],
           followups: [],
           status: 'loading',
@@ -135,12 +129,12 @@ export default function Page() {
       ]);
       step(
         '相談を受け取った',
-        `モード: ${mode === 'person' ? '人を探す' : '経験談を探す'} ／ 語り口: ${TONE_OPTIONS.find((item) => item.value === tone)?.label ?? tone} ／ モデル: ${model}`,
+        `語り口: ${TONE_OPTIONS.find((item) => item.value === tone)?.label ?? tone} ／ モデル: ${model}`,
       );
       // 相談した時点で履歴を1件積む（件数と要約は結果が出たら埋める）。続きのときは積まない
       if (!continuing) {
         updateHistory((prev) => [
-          { id, query, mode, model, createdAt: new Date().toISOString(), count: 0 },
+          { id, query, model, createdAt: new Date().toISOString(), count: 0 },
           ...prev,
         ]);
         setActiveHistoryId(id);
@@ -155,10 +149,7 @@ export default function Page() {
        * こうしておくと、要約に失敗してもカード自体は残る。
        */
       const saveCard = async (finished: ChatTurn) => {
-        const seen =
-          finished.mode === 'person'
-            ? finished.people.map((hit) => hit.quote)
-            : finished.experiences.map((item) => `${item.title}／${item.point}`);
+        const seen = finished.experiences.map((item) => `${item.title}／${item.point}`);
 
         updateRecords((prev) => [
           {
@@ -166,7 +157,6 @@ export default function Page() {
             historyId: finished.id,
             title: deriveTitle(finished.query),
             query: finished.query,
-            mode: finished.mode,
             createdAt: new Date().toISOString(),
             count: seen.length,
             summary: seen[0],
@@ -216,7 +206,7 @@ export default function Page() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, model, mode, tone }),
+          body: JSON.stringify({ query, model, tone, attachments: options?.attachments ?? [] }),
         });
 
         if (!response.ok || !response.body) {
@@ -232,7 +222,6 @@ export default function Page() {
         let firstChunk = true;
         // 受け取った最新の中身。完成したターンはここから組み立てる
         let latestExperiences: Experience[] = [];
-        let latestPeople: PersonHit[] = [];
 
         for (;;) {
           const { value, done } = await reader.read();
@@ -254,15 +243,12 @@ export default function Page() {
             }
 
             const status = payload.type === 'done' ? 'done' : 'streaming';
-            if (payload.mode === 'person') latestPeople = payload.people;
-            else latestExperiences = payload.experiences;
-            const items =
-              payload.mode === 'person'
-                ? { people: payload.people }
-                : { experiences: payload.experiences };
+            latestExperiences = payload.experiences;
 
             setTurns((prev) =>
-              prev.map((turn) => (turn.id === id ? { ...turn, status, ...items } : turn)),
+              prev.map((turn) =>
+                turn.id === id ? { ...turn, status, experiences: payload.experiences } : turn,
+              ),
             );
 
             if (firstChunk) {
@@ -271,15 +257,10 @@ export default function Page() {
             }
 
             if (payload.type === 'done') {
-              // カードの要約には最初の1件（見出し／一言）を使う
-              const [count, summary] =
-                payload.mode === 'person'
-                  ? [payload.people.length, payload.people[0]?.quote]
-                  : [payload.experiences.length, payload.experiences[0]?.title];
-              step(
-                mode === 'person' ? '一言を選び終えた' : '経験を選び終えた',
-                `${count}件`,
-              );
+              // カードの要約には最初の1件の見出しを使う
+              const count = payload.experiences.length;
+              const summary = payload.experiences[0]?.title;
+              step('経験を選び終えた', `${count}件`);
               updateHistory((prev) =>
                 prev.map((entry) =>
                   entry.id === historyId
@@ -294,29 +275,6 @@ export default function Page() {
 
         if (streamError) throw new Error(streamError);
 
-        // 「人を探す」は一言とアカウントだけ見せるので、記事は取りに行かない
-        if (mode === 'person') {
-          const followups = await askFollowups(
-            latestPeople.map((hit) => hit.quote),
-          );
-          const finished: ChatTurn = {
-            id,
-            query,
-            mode,
-            experiences: [],
-            people: latestPeople,
-            articles: [],
-            followups,
-            status: 'done',
-            steps: [...steps],
-          };
-          setTurns((prev) => prev.map((turn) => (turn.id === id ? finished : turn)));
-          // 副作用は更新関数の外で行う（更新関数はレンダー中に再実行されうるため）
-          appendTurn(historyId, finished);
-          // カードは相談ごとに1枚。続きのときは作り直さない
-          if (!continuing) void saveCard(finished);
-          return;
-        }
 
         // 記事と「次に聞きたいこと」はストリーミングが終わってから。互いに独立なので並べて取る
         const [articles, followups] = await Promise.all([
@@ -330,9 +288,7 @@ export default function Page() {
         const finished: ChatTurn = {
           id,
           query,
-          mode,
           experiences: latestExperiences,
-          people: [],
           articles: articles.articles,
           followups,
           status: 'done',
@@ -357,17 +313,15 @@ export default function Page() {
         scrollToBottom();
       }
     },
-    [mode, model, tone, activeHistoryId, appendTurn, scrollToBottom],
+    [model, tone, activeHistoryId, appendTurn, scrollToBottom],
   );
 
   const composer = (docked: boolean) => (
     <InputBar
-      onSubmit={handleSubmit}
+      onSubmit={(query, attachments) => handleSubmit(query, { attachments })}
       loading={loading}
       model={model}
       onModelChange={setModel}
-      mode={mode}
-      onModeChange={setMode}
       tone={tone}
       onToneChange={setTone}
       docked={docked}
@@ -419,9 +373,7 @@ export default function Page() {
                   {
                     id: entry.id,
                     query: entry.query,
-                    mode: entry.mode,
                     experiences: [],
-                    people: [],
                     articles: [],
                     followups: [],
                     status: 'error',
@@ -459,17 +411,18 @@ export default function Page() {
             />
           </main>
         ) : turns.length === 0 ? (
-          // 会話が始まる前は入力欄を画面中央に置く
+          // 会話が始まる前は、名前を左上に置いて入力欄を画面中央に置く
           <main
-            className="mx-auto flex w-full max-w-[600px] flex-col items-center justify-center gap-6 px-5 py-10"
+            className="mx-auto flex w-full max-w-[720px] flex-col px-5 pb-10 pt-16 lg:pt-10"
             // dvh + interactiveWidget で、スマホのキーボードに合わせて中央がせり上がる
             style={{ minHeight: '100dvh' }}
           >
-            <div className="flex flex-col items-center">
-              <h1 className="text-[22px] font-medium tracking-tight text-ink">Brain</h1>
-              <BrainMark className="mt-4 h-20 w-auto text-accent" />
+            <div className="flex flex-1 flex-col justify-center gap-5">
+              <h1 className="text-center text-[20px] font-medium leading-snug tracking-tight text-ink">
+                何か相談してみましょう
+              </h1>
+              {composer(false)}
             </div>
-            {composer(false)}
           </main>
         ) : (
           // 始まったら入力欄は下に固定して、ログを上に伸ばす

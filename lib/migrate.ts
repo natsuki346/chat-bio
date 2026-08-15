@@ -36,7 +36,6 @@ export function migrateLegacyRecords(): void {
       .map((item) => ({
         id: item.id,
         query: item.query,
-        mode: item.mode === 'person' ? 'person' : 'experience',
         createdAt: item.createdAt ?? new Date().toISOString(),
         count: typeof item.count === 'number' ? item.count : 0,
         summary: item.summary,

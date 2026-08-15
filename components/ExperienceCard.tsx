@@ -82,7 +82,6 @@ export default function ExperienceCard({
               target={{
                 key: reactionKey,
                 query: query ?? '',
-                mode: 'experience',
                 about: experience.title,
                 point: experience.point,
                 score: experience.score,

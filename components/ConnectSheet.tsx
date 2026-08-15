@@ -112,7 +112,7 @@ export default function ConnectSheet({
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] leading-snug text-ink">{record.title}</span>
                     <span className="mt-1 block text-[11px] leading-snug text-muted">
-                      {record.mode === 'person' ? '人を探す' : '経験談を探す'} ・ {record.count}件 ・{' '}
+                      {record.count}件 ・{' '}
                       {formatDate(record.createdAt)}
                     </span>
                   </span>

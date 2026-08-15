@@ -115,6 +115,26 @@ export function StopIcon({ className }: { className?: string }) {
   );
 }
 
+/** 添付する */
+export function PlusIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </Icon>
+  );
+}
+
+/** 添付されたもの */
+export function FileIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M13.5 3.5H7A2 2 0 0 0 5 5.5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z" />
+      <path d="M13.5 3.5V9H19" />
+    </Icon>
+  );
+}
+
 /** 送信 */
 export function SendIcon({ className }: { className?: string }) {
   return (

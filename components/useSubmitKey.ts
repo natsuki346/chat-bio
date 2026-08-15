@@ -54,7 +54,7 @@ export function useSubmitKey(onSubmit: () => void) {
 }
 
 /** 入力に合わせて textarea の高さを伸ばす。上限を超えたら中でスクロールさせる。 */
-export function autoGrow(element: HTMLTextAreaElement | null, max = 160): void {
+export function autoGrow(element: HTMLTextAreaElement | null, max = 260): void {
   if (!element) return;
   element.style.height = 'auto';
   element.style.height = `${Math.min(element.scrollHeight, max)}px`;

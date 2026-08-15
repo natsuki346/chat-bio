@@ -77,9 +77,7 @@ export default function MyCards({
       const entry = history.find((item) => item.id === record.historyId);
       // 続けて聞いたぶんも材料にする
       const seen = (entry ? historyTurns(entry) : []).flatMap((turn) =>
-        turn.mode === 'person'
-          ? turn.people.map((hit) => hit.quote)
-          : turn.experiences.map((item) => `${item.title}／${item.point}`),
+        turn.experiences.map((item) => `${item.title}／${item.point}`),
       );
       const chat = messages.map(
         (message) => `${message.from === 'me' ? '自分' : '相手'}: ${message.text}`,
@@ -159,8 +157,7 @@ export default function MyCards({
                       </span>
                     )}
                     <span className="mt-1.5 block text-[11px] text-muted">
-                      {record.mode === 'person' ? '人を探す' : '経験談を探す'} ・ {record.count}件 ・{' '}
-                      {formatDate(record.createdAt)}
+                      {record.count}件 ・ {formatDate(record.createdAt)}
                     </span>
                   </span>
                   <span

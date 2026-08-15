@@ -99,7 +99,6 @@ function normalize(turn: ChatTurn): ChatTurn {
   return {
     ...turn,
     experiences: turn.experiences ?? [],
-    people: turn.people ?? [],
     articles: turn.articles ?? [],
     followups: turn.followups ?? [],
     steps: turn.steps ?? [],
@@ -147,12 +146,8 @@ export function historyToText(entry: HistoryEntry): string {
   turns.forEach((turn, index) => {
     // 2件目以降は、どの質問への話なのかが分かるように見出しを挟む
     if (index > 0) lines.push('', `--- ${turn.query}`);
-    if (turn.mode === 'person') {
-      for (const hit of turn.people) lines.push('', `「${hit.quote}」`);
-    } else {
-      for (const item of turn.experiences) {
-        lines.push('', `【${item.title}】`, item.body, `→ ${item.point}`);
-      }
+    for (const item of turn.experiences) {
+      lines.push('', `【${item.title}】`, item.body, `→ ${item.point}`);
     }
   });
   return lines.join('\n');
