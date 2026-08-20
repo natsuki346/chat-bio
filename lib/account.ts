@@ -17,9 +17,23 @@ function read(): RegisteredAccount | null {
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
-    const item = parsed as RegisteredAccount;
-    if (typeof item.accountId !== 'string' || typeof item.username !== 'string') return null;
-    return item;
+
+    /*
+     * 中身は accountId で持つが、DB の列名に合わせて account_id で
+     * 手で入れられていることがある。どちらの書き方でも読めるようにしておく
+     * （名前が出ないと「登録できていない」ように見えてしまうため）。
+     */
+    const item = parsed as Record<string, unknown>;
+    const text = (value: unknown) => (typeof value === 'string' && value ? value : '');
+    const accountId = text(item.accountId) || text(item.account_id);
+    const username = text(item.username);
+    if (!accountId || !username) return null;
+
+    return {
+      accountId,
+      username,
+      registeredAt: text(item.registeredAt) || text(item.registered_at),
+    };
   } catch {
     return null;
   }
