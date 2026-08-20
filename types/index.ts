@@ -5,7 +5,67 @@ export type Experience = {
   point: string;
   /** 相談内容とのマッチ度。0〜100の整数。ストリーミング途中や旧データには無いので任意 */
   score?: number;
+  /** 提供者。DB の account_id（繋がる先）。旧データでは lib/people.ts のキー */
   person?: string;
+  /** どの経験談から出たか。「つながる」を押したときの記録に使う */
+  experienceId?: string;
+  /** 提供者の表示名。DB から来た経験談はここに入る（旧データは lib/people.ts で引く） */
+  personName?: string;
+  personHandle?: string;
+};
+
+/**
+ * このブラウザで登録した人。認証ではなく、名前を出すためだけの控え。
+ * account_id は画面には出さない（運営側の管理用）。
+ */
+export type RegisteredAccount = {
+  accountId: string;
+  username: string;
+  registeredAt: string;
+};
+
+/** 経験談の提供者。運営者の目の前で登録する */
+export type Supplier = {
+  accountId: string;
+  username: string;
+  email: string;
+  createdAt: string;
+  /** 一覧で見せる、その人に紐づく経験談の件数 */
+  experienceCount?: number;
+};
+
+/** DB に入っている経験談そのもの。表示用の Experience とは別物 */
+export type StoredExperience = {
+  experienceId: string;
+  accountId: string;
+  /** 運営者が後から付与する。例：就活/自己分析 */
+  tags: string[];
+  content: string;
+  createdAt: string;
+  /** 一覧表示用に供給者名を添えることがある */
+  username?: string;
+};
+
+/** 「つながる」が押された記録。運営者が手作業で接続する */
+export type ConnectRequest = {
+  requestId: string;
+  experienceId: string;
+  accountId: string;
+  requesterNote?: string;
+  /** DB の値。画面では「未対応 / 対応済み」と出す */
+  status: 'pending' | 'done';
+  createdAt: string;
+  /** 一覧表示用 */
+  username?: string;
+  content?: string;
+};
+
+/** マッチする経験談が無かった相談。何を集めるべきかを知るために残す */
+export type UnmatchedLog = {
+  logId: string;
+  query: string;
+  topScore: number | null;
+  createdAt: string;
 };
 
 /**
@@ -127,7 +187,10 @@ export type MatchReport = {
 /** DM の1通。カードを添えられる。 */
 export type DirectMessage = {
   id: string;
+  /** 相手。DB の account_id（旧データでは lib/people.ts のキー） */
   person: string;
+  /** 相手の表示名。DB の供給者は lib/people.ts に居ないので、送った時点の名前を持たせる */
+  personName?: string;
   from: 'me' | 'them';
   text: string;
   /** 添えた相談カード（マイカード）の id */

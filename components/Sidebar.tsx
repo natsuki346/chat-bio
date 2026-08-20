@@ -16,6 +16,11 @@ import {
   getServerMessagesSnapshot,
   subscribeMessages,
 } from '@/lib/messages';
+import {
+  getAccountSnapshot,
+  getServerAccountSnapshot,
+  subscribeAccount,
+} from '@/lib/account';
 import type { HistoryEntry } from '@/types';
 
 export type SidebarView = 'chat' | 'cards' | 'dm';
@@ -59,6 +64,13 @@ export default function Sidebar({
     getServerMessagesSnapshot,
   );
   const pending = messages.filter((message) => message.cardStatus === 'pending').length;
+
+  // このブラウザで登録した人。認証ではないので、居なければ何も持たない
+  const account = useSyncExternalStore(
+    subscribeAccount,
+    getAccountSnapshot,
+    getServerAccountSnapshot,
+  );
 
   const commitRename = () => {
     if (renaming) renameHistory(renaming.id, renaming.value);
@@ -306,6 +318,32 @@ export default function Sidebar({
                   confirmClassName="block text-left text-[11px] font-medium text-ink"
                 />
               </div>
+            </>
+          )}
+        </div>
+
+        {/*
+          左下に「自分がここに居る」ことだけを出す。
+          押しても何も起きない（プロフィール画面は作らない）
+        */}
+        <div className="flex shrink-0 items-center gap-2 border-t border-line-strong px-4 py-3">
+          {account ? (
+            <>
+              <span
+                aria-hidden
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-strong text-[12px] font-medium text-white"
+              >
+                {[...account.username][0] ?? '?'}
+              </span>
+              <span className="min-w-0 truncate text-[12px] text-ink">{account.username}</span>
+            </>
+          ) : (
+            <>
+              <span
+                aria-hidden
+                className="h-7 w-7 shrink-0 rounded-full border border-line-strong bg-white"
+              />
+              <span className="text-[12px] text-muted">未登録</span>
             </>
           )}
         </div>

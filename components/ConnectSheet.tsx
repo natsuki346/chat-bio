@@ -5,6 +5,7 @@ import Sheet from './Sheet';
 import { useRecords } from './RecordsContext';
 import { formatDate } from '@/lib/records';
 import { sendMessage } from '@/lib/messages';
+import { logConnectRequest } from '@/lib/connect';
 import type { Person } from '@/types';
 
 /**
@@ -14,6 +15,7 @@ import type { Person } from '@/types';
 export default function ConnectSheet({
   person,
   personKey,
+  experienceId,
   query,
   about,
   open,
@@ -21,6 +23,8 @@ export default function ConnectSheet({
 }: {
   person: Person;
   personKey: string;
+  /** どの経験談から押されたか。運営者への接続依頼に載せる */
+  experienceId?: string;
   /** そのときの相談内容 */
   query?: string;
   /** 見ていた経験談の見出し、または一言 */
@@ -65,6 +69,7 @@ export default function ConnectSheet({
             onClick={() => {
               sendMessage({
                 person: personKey,
+                personName: person.name,
                 from: 'me',
                 text:
                   selected.length > 0
@@ -73,6 +78,12 @@ export default function ConnectSheet({
                 cardIds: selected,
                 // 受け手が「どの話を見て来たか」を分かるように文脈も渡す
                 context: { about, query },
+              });
+              // 実際に繋ぐのは運営者なので、押されたことを待ち行列に積む
+              void logConnectRequest({
+                experienceId,
+                accountId: personKey,
+                requesterNote: query,
               });
               setSent(true);
             }}

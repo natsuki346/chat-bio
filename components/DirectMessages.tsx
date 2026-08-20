@@ -13,7 +13,7 @@ import RequestCardView from './RequestCardView';
 import { BackIcon, PaperPlaneIcon, SendIcon } from './Icons';
 import { autoGrow, useSubmitKey } from './useSubmitKey';
 import { useRecords } from './RecordsContext';
-import { PEOPLE } from '@/lib/people';
+import { resolvePerson } from '@/lib/people';
 import {
   deleteThread,
   formatTime,
@@ -134,8 +134,8 @@ function ThreadList({
   return (
     <ul className="-mx-2">
       {threads.map(([key, last]) => {
-        const person = PEOPLE[key];
-        if (!person) return null;
+        // DB の供給者は lib/people.ts に居ないので、送った時点の名前を使う
+        const person = resolvePerson(key, last.personName);
         const pending = messages.filter(
           (message) => message.person === key && message.cardStatus === 'pending',
         ).length;
@@ -223,9 +223,12 @@ export default function DirectMessages() {
     autoGrow(draftRef.current, 120);
   }, [draft]);
 
-  const person = openPerson ? PEOPLE[openPerson] : undefined;
   const thread = openPerson ? messages.filter((message) => message.person === openPerson) : [];
   const threadLength = thread.length;
+  // 相手の名前は、そのやり取りの中に残してある（DB の供給者は lib/people.ts に居ない）
+  const person = openPerson
+    ? resolvePerson(openPerson, thread.find((message) => message.personName)?.personName)
+    : undefined;
 
   // 発言が増えたら一番下へ送る
   useEffect(() => {

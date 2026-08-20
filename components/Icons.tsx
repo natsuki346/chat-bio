@@ -154,6 +154,16 @@ export function BackIcon({ className }: { className?: string }) {
   );
 }
 
+/** 登録できた合図。丸で囲ったチェック */
+export function CheckCircleIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.6 2.5L16 9.5" />
+    </Icon>
+  );
+}
+
 /** サイドバーを開閉する（3本線） */
 export function MenuIcon({ className }: { className?: string }) {
   return (

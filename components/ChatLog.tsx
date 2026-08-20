@@ -49,7 +49,21 @@ export default function ChatLog({
             </div>
           )}
 
-          {(turn.status === 'streaming' || turn.status === 'done') && (
+          {/*
+            近い経験が1件も無かったとき。黙って空にすると失敗に見えるので、
+            「まだ無い」ことをそのまま伝える（この相談は unmatched_logs に残る）
+          */}
+          {turn.status === 'done' && turn.experiences.length === 0 && (
+            <div className="rounded-lg border border-line bg-white px-3 py-2.5">
+              <p className="text-[13px] leading-relaxed text-muted">
+                今のところ、この悩みに近い経験を持つ人がまだ登録されていません。
+                <br />
+                同じことを経験した人が加わったときに、届けられるようにしておきます。
+              </p>
+            </div>
+          )}
+
+          {(turn.status === 'streaming' || turn.status === 'done') && turn.experiences.length > 0 && (
             <>
               <p className="text-[11px] tracking-wide text-muted">同じ経験をした人の話</p>
               <div className="space-y-3">

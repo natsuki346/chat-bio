@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Sheet from './Sheet';
 import RequestCardView from './RequestCardView';
 import { sendMessage } from '@/lib/messages';
+import { logConnectRequest } from '@/lib/connect';
 import type { MatchReport, ModelId, Person } from '@/types';
 
 type Phase = 'writing' | 'ready' | 'failed' | 'sent';
@@ -17,6 +18,7 @@ type Phase = 'writing' | 'ready' | 'failed' | 'sent';
 export default function ReportSheet({
   person,
   personKey,
+  experienceId,
   query,
   about,
   model,
@@ -25,6 +27,8 @@ export default function ReportSheet({
 }: {
   person: Person;
   personKey: string;
+  /** どの経験談から押されたか。運営者への接続依頼に載せる */
+  experienceId?: string;
   query?: string;
   about?: string;
   model: ModelId;
@@ -99,11 +103,18 @@ export default function ReportSheet({
               if (!report) return;
               sendMessage({
                 person: personKey,
+                personName: person.name,
                 from: 'me',
                 text: report.greeting.trim(),
                 cardIds: [],
                 card: report.card,
                 cardStatus: 'pending',
+              });
+              // 実際に繋ぐのは運営者なので、押されたことを待ち行列に積む
+              void logConnectRequest({
+                experienceId,
+                accountId: personKey,
+                requesterNote: query,
               });
               setPhase('sent');
             }}

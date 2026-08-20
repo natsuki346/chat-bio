@@ -3,19 +3,27 @@
 import { useState, type ReactNode } from 'react';
 import ReportSheet from './ReportSheet';
 import ConnectSheet from './ConnectSheet';
-import { PEOPLE, DEFAULT_PERSON } from '@/lib/people';
+import { resolvePerson, DEFAULT_PERSON } from '@/lib/people';
 import type { ModelId } from '@/types';
 
 /** 名前・ハンドル・チャット/繋がる導線をまとめた行。経験カードと人カードで共用する。 */
 export default function PersonBadge({
   person: key,
+  personName,
+  personHandle,
+  experienceId,
   query,
   about,
   model,
   showName = true,
   leading,
 }: {
+  /** 供給者の account_id。旧データでは lib/people.ts のキー */
   person?: string;
+  personName?: string;
+  personHandle?: string;
+  /** どの経験談から押されたか。つながるリクエストの記録に使う */
+  experienceId?: string;
   /** 何に悩んで相談したか。カードの材料にする */
   query?: string;
   /** 相手のどの話・どの一言に反応したか */
@@ -27,7 +35,7 @@ export default function PersonBadge({
   leading?: ReactNode;
 }) {
   const personKey = key ?? DEFAULT_PERSON;
-  const person = PEOPLE[personKey] ?? PEOPLE[DEFAULT_PERSON];
+  const person = resolvePerson(key, personName, personHandle);
   const [sheet, setSheet] = useState<'chat' | 'connect' | null>(null);
 
   if (!person) return null;
@@ -60,6 +68,7 @@ export default function PersonBadge({
       <ReportSheet
         person={person}
         personKey={personKey}
+        experienceId={experienceId}
         query={query}
         about={about}
         model={model}
@@ -69,6 +78,7 @@ export default function PersonBadge({
       <ConnectSheet
         person={person}
         personKey={personKey}
+        experienceId={experienceId}
         query={query}
         about={about}
         open={sheet === 'connect'}

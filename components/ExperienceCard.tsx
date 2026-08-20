@@ -3,7 +3,7 @@
 import PersonBadge from './PersonBadge';
 import MatchStars from './MatchStars';
 import UpvoteButton from './UpvoteButton';
-import { PEOPLE, DEFAULT_PERSON } from '@/lib/people';
+import { resolvePerson } from '@/lib/people';
 import type { Experience, ModelId } from '@/types';
 
 /**
@@ -26,7 +26,7 @@ export default function ExperienceCard({
   reactionKey: string;
 }) {
   // 「誰の話か」をカードの主語にするので、名前は本文より先に出す
-  const person = PEOPLE[experience.person ?? DEFAULT_PERSON] ?? PEOPLE[DEFAULT_PERSON];
+  const person = resolvePerson(experience.person, experience.personName, experience.personHandle);
 
   return (
     <article className="rounded-2xl border border-line bg-white px-4 py-4">
@@ -73,6 +73,9 @@ export default function ExperienceCard({
         {/* 名前は上のヘッダーで出しているので、ここはボタンだけ */}
         <PersonBadge
           person={experience.person}
+          personName={experience.personName}
+          personHandle={experience.personHandle}
+          experienceId={experience.experienceId}
           query={query}
           about={experience.title}
           model={model}
