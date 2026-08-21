@@ -10,11 +10,12 @@ import {
 } from 'react';
 import ComposerMenu from './ComposerMenu';
 import ComposerSettings from './ComposerSettings';
+import ModeToggle from './ModeToggle';
 import MoreMenu from './MoreMenu';
 import { FileIcon, MicIcon, PlusIcon, SendIcon, SparkIcon, StopIcon } from './Icons';
 import { useSpeechInput } from './useSpeechInput';
 import { autoGrow, useSubmitKey } from './useSubmitKey';
-import { APP_MODE_OPTIONS, MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
+import { MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
 import { ACCEPT, MAX_FILES, readAttachments } from '@/lib/attachments';
 import type { AppMode, Attachment, ModelId, Tone } from '@/types';
 
@@ -154,13 +155,26 @@ export default function InputBar({
     setSkipped(result.skipped);
   };
 
+  /*
+   * 整理し終えたカードを添えて相談モードに来たとき、本文を書き直させたくない。
+   * 入力が空でも、添えたものがあればそれだけで送れるようにする。
+   */
+  const carried = attachments.length > 0;
+
   const send = (query: string) => {
     const trimmed = query.trim();
-    if (!trimmed || loading) return;
+    if (loading) return;
+    if (!trimmed && !carried) return;
     if (speech.listening) speech.stop();
     baseRef.current = '';
     setValue('');
-    onSubmit(trimmed, attachments);
+    // 何も打っていないなら、添えたものの中身をそのまま相談内容にする
+    // （query と添付の両方に同じ本文を載せて二重に渡さない）
+    if (trimmed) {
+      onSubmit(trimmed, attachments);
+    } else {
+      onSubmit(attachments.map((item) => item.text).join('\n\n'), []);
+    }
     onAttachmentsChange([]);
     setSkipped([]);
   };
@@ -288,17 +302,10 @@ export default function InputBar({
                   disabled={loading}
                   leading={<span className="text-[10px] tracking-wide text-faint">語り口</span>}
                 />
-
-                {/* 整理／相談の切り替え。モデル・語り口と並びで置く */}
-                <ComposerMenu
-                  label="モード"
-                  options={APP_MODE_OPTIONS}
-                  value={appMode}
-                  onChange={onAppModeChange}
-                  disabled={loading}
-                  leading={<span className="text-[10px] tracking-wide text-faint">モード</span>}
-                />
               </div>
+
+              {/* 整理／相談は1タップで移れるように、両方を出しておく */}
+              <ModeToggle value={appMode} onChange={onAppModeChange} disabled={loading} />
 
               <div className="sm:hidden">
                 <ComposerSettings
@@ -306,8 +313,6 @@ export default function InputBar({
                   onModelChange={onModelChange}
                   tone={tone}
                   onToneChange={onToneChange}
-                  appMode={appMode}
-                  onAppModeChange={onAppModeChange}
                   disabled={loading}
                 />
               </div>
@@ -343,7 +348,7 @@ export default function InputBar({
 
               <button
                 type="submit"
-                disabled={loading || !value.trim()}
+                disabled={loading || (!value.trim() && !carried)}
                 aria-label="送る"
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-white transition-opacity disabled:opacity-30"
               >

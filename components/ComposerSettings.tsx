@@ -3,33 +3,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SlidersIcon } from './Icons';
-import { APP_MODE_OPTIONS, MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
-import type { AppMode, ModelId, Tone } from '@/types';
+import { MODEL_OPTIONS, TONE_OPTIONS } from '@/lib/options';
+import type { ModelId, Tone } from '@/types';
 
 const WIDTH = 260;
 
 type Option<T extends string> = { value: T; label: string; hint?: string };
 
 /**
- * スマホ用。モデル・語り口・モードの3つのピルを並べると入りきらないので、
- * ひとつのボタンにまとめ、開いたパネルの中に縦に並べる（横スクロールはさせない）。
- * デスクトップでは使わない（InputBar 側で ComposerMenu を3つ並べる）。
+ * スマホ用。モデルと語り口のピルを並べると入りきらないので、ひとつのボタンに
+ * まとめ、開いたパネルの中に縦に並べる（横スクロールはさせない）。
+ * デスクトップでは使わない（InputBar 側で ComposerMenu を並べる）。
+ * モードだけは常に見えていてほしいので、ここには入れない（ModeToggle が持つ）。
  */
 export default function ComposerSettings({
   model,
   onModelChange,
   tone,
   onToneChange,
-  appMode,
-  onAppModeChange,
   disabled,
 }: {
   model: ModelId;
   onModelChange: (model: ModelId) => void;
   tone: Tone;
   onToneChange: (tone: Tone) => void;
-  appMode: AppMode;
-  onAppModeChange: (mode: AppMode) => void;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -129,7 +126,7 @@ export default function ComposerSettings({
         disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="モデル・語り口・モードを選ぶ"
+        aria-label="モデル・語り口を選ぶ"
         onClick={toggle}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-ink transition-colors hover:border-accent-strong disabled:opacity-40"
       >
@@ -142,13 +139,12 @@ export default function ComposerSettings({
           <div
             ref={panelRef}
             role="menu"
-            aria-label="モデル・語り口・モード"
+            aria-label="モデル・語り口"
             style={{ top: pos.top, left: pos.left, width: WIDTH }}
             className="fixed z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-line bg-white shadow-[0_8px_24px_rgba(27,46,63,0.14)]"
           >
             {group('モデル', MODEL_OPTIONS, model, onModelChange)}
             {group('語り口', TONE_OPTIONS, tone, onToneChange)}
-            {group('モード', APP_MODE_OPTIONS, appMode, onAppModeChange)}
           </div>,
           document.body,
         )}

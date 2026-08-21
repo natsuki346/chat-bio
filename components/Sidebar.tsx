@@ -21,7 +21,7 @@ import {
   getServerAccountSnapshot,
   subscribeAccount,
 } from '@/lib/account';
-import type { HistoryEntry } from '@/types';
+import type { HistoryEntry, IssueCard } from '@/types';
 
 export type SidebarView = 'chat' | 'cards' | 'dm';
 
@@ -41,6 +41,10 @@ export default function Sidebar({
   onSelectHistory,
   onDeleteHistory,
   onClearHistory,
+  issues,
+  activeIssueId,
+  onSelectIssue,
+  onDeleteIssue,
 }: {
   open: boolean;
   onClose: () => void;
@@ -52,6 +56,11 @@ export default function Sidebar({
   onSelectHistory: (id: string) => void;
   onDeleteHistory: (id: string) => void;
   onClearHistory: () => void;
+  /** 整理モードのやり取り。履歴とは別のストアなので、ここで受け取って一緒に並べる */
+  issues: IssueCard[];
+  activeIssueId: string | null;
+  onSelectIssue: (id: string) => void;
+  onDeleteIssue: (id: string) => void;
 }) {
   // 名前を変更中の履歴。id と編集中の文字列を持つ
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
@@ -92,6 +101,87 @@ export default function Sidebar({
   const pinned = showArchived ? [] : shown.filter((entry) => entry.pinned);
   const listed = showArchived ? shown : shown.filter((entry) => !entry.pinned);
 
+  /*
+   * 整理のやり取りも履歴に並べる。ただしアーカイブ表示のときは出さない
+   * （アーカイブは履歴だけの仕組みなので）。
+   */
+  const openIssues = showArchived
+    ? []
+    : issues.filter((issue) => issue.title || issue.messages.length > 0);
+
+  const mixed = [
+    ...listed.map((entry) => ({ kind: 'history' as const, entry, at: entry.createdAt })),
+    ...openIssues.map((issue) => ({ kind: 'issue' as const, issue, at: issue.createdAt })),
+  ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+
+  /*
+   * どちらのモードのやり取りかを示す小さな印。
+   * 整理はエメラルド、相談はスカイブルー。どちらも淡い面に濃い文字を載せる。
+   * 警戒色（赤・黄）は使わない。ここは安心して喋る場所なので、
+   * 色で急かしたり不安にさせたりしない。
+   */
+  const badge = (mode: 'organize' | 'consult') =>
+    mode === 'organize' ? (
+      <span className="shrink-0 rounded bg-calm px-1.5 py-0.5 text-[9px] font-medium leading-none text-accent-strong">
+        整理
+      </span>
+    ) : (
+      <span className="shrink-0 rounded bg-open px-1.5 py-0.5 text-[9px] font-medium leading-none text-trust-strong">
+        相談
+      </span>
+    );
+
+  /** 整理モードのやり取り。まだ相談に進んでいないものだけをここに出す */
+  const issueRow = (issue: IssueCard) => (
+    <li key={issue.id} className="group relative">
+      {issue.id === activeIssueId && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-accent"
+        />
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          onSelectIssue(issue.id);
+          onClose();
+        }}
+        aria-current={issue.id === activeIssueId ? 'page' : undefined}
+        className={`flex w-full items-center gap-1.5 rounded-lg py-2 pl-2.5 pr-14 text-left transition-colors ${
+          issue.id === activeIssueId
+            ? 'bg-white shadow-[0_1px_2px_rgba(27,46,63,0.06)]'
+            : 'hover:bg-white/70'
+        }`}
+      >
+        {badge('organize')}
+        <span
+          className={`min-w-0 flex-1 truncate text-[12px] ${
+            issue.id === activeIssueId ? 'font-medium text-accent-strong' : 'text-ink'
+          }`}
+        >
+          {issue.title || issue.messages[0]?.text || '整理中の悩み'}
+        </span>
+      </button>
+
+      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-faint group-hover:opacity-0 group-focus-within:opacity-0 group-has-[[aria-expanded=true]]:opacity-0">
+        {formatDate(issue.createdAt)}
+      </span>
+      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 group-has-[[aria-expanded=true]]:opacity-100">
+        <MoreMenu
+          label="この整理の操作"
+          items={[
+            {
+              label: '削除',
+              confirmLabel: '本当に削除する',
+              danger: true,
+              onSelect: () => onDeleteIssue(issue.id),
+            },
+          ]}
+        />
+      </span>
+    </li>
+  );
+
   const row = (entry: HistoryEntry) =>
     renaming?.id === entry.id ? (
       <li key={entry.id}>
@@ -123,12 +213,13 @@ export default function Sidebar({
             onClose();
           }}
           aria-current={entry.id === activeHistoryId ? 'page' : undefined}
-          className={`flex w-full items-center gap-2 rounded-lg py-2 pl-2.5 pr-14 text-left transition-colors ${
+          className={`flex w-full items-center gap-1.5 rounded-lg py-2 pl-2.5 pr-14 text-left transition-colors ${
             entry.id === activeHistoryId
               ? 'bg-white shadow-[0_1px_2px_rgba(27,46,63,0.06)]'
               : 'hover:bg-white/70'
           }`}
         >
+          {badge('consult')}
           {/* 付け直した名前があればそれを、無ければ打った文面をそのまま出す */}
           <span
             className={`min-w-0 flex-1 truncate text-[12px] ${
@@ -277,9 +368,9 @@ export default function Sidebar({
             {showArchived ? 'アーカイブ' : '履歴'}
           </p>
 
-          {history.length === 0 ? (
+          {history.length === 0 && openIssues.length === 0 ? (
             <p className="px-2.5 text-[12px] leading-relaxed text-muted">
-              相談するとここに残ります。
+              話すとここに残ります。
             </p>
           ) : (
             <>
@@ -292,12 +383,17 @@ export default function Sidebar({
                 </>
               )}
 
-              {listed.length === 0 ? (
+              {listed.length === 0 && openIssues.length === 0 ? (
                 <p className="px-2.5 text-[12px] leading-relaxed text-muted">
-                  {showArchived ? 'アーカイブはありません。' : 'ここに並ぶ相談はありません。'}
+                  {showArchived ? 'アーカイブはありません。' : 'ここに並ぶやり取りはありません。'}
                 </p>
               ) : (
-                <ul>{listed.map(row)}</ul>
+                <ul>
+                  {/* 整理と相談を混ぜて新しい順に並べる。どちらかは印で見分ける */}
+                  {mixed.map((item) =>
+                    item.kind === 'issue' ? issueRow(item.issue) : row(item.entry),
+                  )}
+                </ul>
               )}
 
               <div className="mt-2 space-y-1.5 border-t border-line-strong px-2.5 pt-2">

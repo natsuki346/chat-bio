@@ -1,7 +1,7 @@
 import { resolveModel, streamClaude } from '@/lib/anthropic';
 import { extractJsonArray, parsePartialJsonArray } from '@/lib/parse';
-import { ORGANIZE_SYSTEM_PROMPT } from '@/lib/prompt';
-import type { OrganizeMessage } from '@/types';
+import { ORGANIZE_SYSTEM_PROMPT, ORGANIZE_TONE_PROMPTS } from '@/lib/prompt';
+import type { OrganizeMessage, Tone } from '@/types';
 
 export const runtime = 'nodejs';
 // Vercel の関数タイムアウト。1往復ぶんの質問とカードだけなので長くはかからない
@@ -64,6 +64,10 @@ function toPartialReply(raw: unknown): Reply | null {
   return empty ? null : reply;
 }
 
+function resolveTone(value: unknown): Tone {
+  return value === 'friend' || value === 'expert' ? value : 'mentor';
+}
+
 /** やり取りを、そのまま読める1本の文章にしてモデルに渡す。 */
 function transcript(messages: OrganizeMessage[]): string {
   return messages
@@ -74,10 +78,12 @@ function transcript(messages: OrganizeMessage[]): string {
 export async function POST(request: Request) {
   let messages: OrganizeMessage[] = [];
   let model: unknown;
+  let tone: Tone = 'mentor';
 
   try {
     const body = await request.json();
     model = body?.model;
+    tone = resolveTone(body?.tone);
     messages = Array.isArray(body?.messages)
       ? body.messages.filter(
           (item: unknown): item is OrganizeMessage =>
@@ -115,6 +121,8 @@ export async function POST(request: Request) {
       try {
         for await (const chunk of streamClaude({
           system: ORGANIZE_SYSTEM_PROMPT,
+          // 変えるのは喋り方だけ。聞き手であることは動かさない
+          systemSuffix: ORGANIZE_TONE_PROMPTS[tone],
           user: transcript(messages),
           model: resolveModel(model),
           maxTokens: 2048,

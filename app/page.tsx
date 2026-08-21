@@ -32,6 +32,7 @@ import {
 import {
   approveIssue,
   createIssue,
+  deleteIssue,
   getIssuesSnapshot,
   getServerIssuesSnapshot,
   issueToMarkdown,
@@ -100,6 +101,8 @@ export default function Page() {
   // 相談に添えるもの。InputBar は見た目だけを持ち、中身はここで管理する
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [cardPickerOpen, setCardPickerOpen] = useState(false);
+  // 整理から引き継いで相談に来たとき、どのカードから来たかを覚えておく（段階を1枚で辿るため）
+  const [carriedIssueId, setCarriedIssueId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // localStorage（React の外）にあるので外部ストアとして購読する。
@@ -178,7 +181,7 @@ export default function Page() {
         const response = await fetch('/api/organize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: messagesForRequest, model }),
+          body: JSON.stringify({ messages: messagesForRequest, model, tone }),
         });
 
         if (!response.ok || !response.body) {
@@ -254,7 +257,7 @@ export default function Page() {
         setOrganizeDraft(null);
       }
     },
-    [activeIssue, organizeThinking, model],
+    [activeIssue, organizeThinking, model, tone],
   );
 
   const handleApproveIssue = useCallback(() => {
@@ -267,6 +270,7 @@ export default function Page() {
     setAttachments([
       { name: `${activeIssue.title || '悩みカード'}.md`, text: issueToMarkdown(activeIssue) },
     ]);
+    setCarriedIssueId(activeIssue.id);
     setTurns([]);
     setActiveHistoryId(null);
     setMode('consult');
@@ -319,7 +323,7 @@ export default function Page() {
       // 相談した時点で履歴を1件積む（件数と要約は結果が出たら埋める）。続きのときは積まない
       if (!continuing) {
         updateHistory((prev) => [
-          { id, query, model, createdAt: new Date().toISOString(), count: 0 },
+          { id, query, model, mode: 'consult', createdAt: new Date().toISOString(), count: 0 },
           ...prev,
         ]);
         setActiveHistoryId(id);
@@ -340,6 +344,8 @@ export default function Page() {
           {
             id: `card-${finished.id}`,
             historyId: finished.id,
+            // 整理から来たなら、その元カードに繋げておく
+            issueId: carriedIssueId ?? undefined,
             title: deriveTitle(finished.query),
             query: finished.query,
             createdAt: new Date().toISOString(),
@@ -499,7 +505,7 @@ export default function Page() {
         scrollToBottom();
       }
     },
-    [model, tone, activeHistoryId, appendTurn, scrollToBottom],
+    [model, tone, activeHistoryId, carriedIssueId, appendTurn, scrollToBottom],
   );
 
   const composer = (docked: boolean) => (
@@ -537,10 +543,26 @@ export default function Page() {
           setActiveIssueId(null);
           setOrganizeError(null);
           setAttachments([]);
+          setCarriedIssueId(null);
           setView('chat');
         }}
         history={history}
         activeHistoryId={activeHistoryId}
+        issues={issues}
+        activeIssueId={activeIssueId}
+        onSelectIssue={(id) => {
+          // 整理のやり取りを開き直す。相談側の表示は畳む
+          setActiveIssueId(id);
+          setMode('organize');
+          setView('chat');
+          setTurns([]);
+          setActiveHistoryId(null);
+          setOrganizeError(null);
+        }}
+        onDeleteIssue={(id) => {
+          deleteIssue(id);
+          if (id === activeIssueId) setActiveIssueId(null);
+        }}
         onDeleteHistory={(id) => {
           deleteHistory(id);
           // 開いていた対話を消したら本文も畳む（マイカードには影響しない）

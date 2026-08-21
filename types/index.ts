@@ -103,6 +103,8 @@ export type HistoryEntry = {
   archived?: boolean;
   /** 旧データには無いので任意 */
   model?: ModelId;
+  /** どちらのモードのやり取りか。旧データには無いので任意（無ければ相談とみなす） */
+  mode?: AppMode;
   createdAt: string;
   count: number;
   /** 最初に返ってきた見出し／一言 */
@@ -136,6 +138,8 @@ export type ChatRecord = {
   status: RecordStatus;
   /** どの履歴から作ったカードか */
   historyId?: string;
+  /** 整理モードのカードから相談に進んだ場合、その元のカード。段階を1枚で辿るために持つ */
+  issueId?: string;
   /** 解決済みにしたときに、何を見てどう解決したかをまとめたもの */
   resolution?: string;
 };

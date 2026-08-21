@@ -65,6 +65,9 @@
   --color-accent-strong: var(--accent-strong);
   --color-trust: var(--trust);
   --color-trust-strong: var(--trust-strong);
+  /* 整理＝エメラルド系、相談＝スカイブルー系。バッジの下地に使う淡い面 */
+  --color-calm: var(--calm);
+  --color-open: var(--open);
   --color-sage: var(--sage);
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
